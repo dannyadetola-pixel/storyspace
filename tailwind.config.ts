@@ -5,6 +5,9 @@ const config: Config = {
   darkMode: "class",
   theme: {
     extend: {
+      fontFamily: {
+        serif: ["var(--font-lora)", "Georgia", "serif"],
+      },
       colors: {
         app: {
           bg: "#F5F1E8",

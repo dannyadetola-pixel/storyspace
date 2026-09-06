@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -27,6 +28,20 @@ export default async function ProfilePage() {
         <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
           {user.bio || "No bio yet"}
         </p>
+        <div className="flex gap-4 pt-2">
+          <Link
+            href="/books"
+            className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+          >
+            Browse books
+          </Link>
+          <Link
+            href="/books/new"
+            className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+          >
+            Start a new book
+          </Link>
+        </div>
       </div>
     </main>
   );
