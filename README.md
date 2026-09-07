@@ -95,13 +95,20 @@ git push -u origin main
 
 ## What's next
 
-This is module 1 of 6:
+This is module 3 of 6, and it's images-only for now — video and reel upload need Mux, a second new service, and adding two unfamiliar services in one step is exactly the kind of thing that turned Module 1's database setup into a long back-and-forth. Get images working first; video is a clean follow-up once this part is solid.
+
+## Setting up image storage (needed for this module)
+
+This uses **Supabase Storage** — a feature of the same Supabase project you already created, not a new service. No card required.
+
+1. In your Supabase project dashboard, click **Storage** in the left sidebar.
+2. Click **New bucket**, name it `post-media`, and toggle **Public bucket** on. Create it.
+3. Go to **Project Settings → API Keys** (or open the same **Connect** dialog you used for the database earlier). Copy the **Project URL** — it looks like `https://xxxxx.supabase.co` — into `SUPABASE_URL`.
+4. On that same page, copy the **service_role** key (or, on newer projects, the **secret** key — either works) into `SUPABASE_SERVICE_ROLE_KEY`. Treat this like a password — it has full access to your project.
 
 1. ✅ Foundation — auth, full schema, theming
-2. Story writing/reading (your priority)
-3. Feed — posts with images, video, and reels
+2. ✅ Story writing/reading
+3. Feed — images done, video/reels next
 4. Reactions + explore page
 5. Chat and groups
 6. Verification + payment eligibility (Flutterwave)
-
-Come back once this is deployed and working, and we'll build module 2 on top of it.

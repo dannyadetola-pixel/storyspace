@@ -15,6 +15,12 @@ export default function Home() {
             Browse books
           </Link>
           <Link
+            href="/feed"
+            className="text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+          >
+            Feed
+          </Link>
+          <Link
             href="/login"
             className="text-app-primary dark:text-app-primary-dark underline underline-offset-2"
           >

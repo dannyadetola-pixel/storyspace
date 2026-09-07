@@ -41,6 +41,12 @@ export default async function ProfilePage() {
           >
             Start a new book
           </Link>
+          <Link
+            href="/feed"
+            className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+          >
+            Feed
+          </Link>
         </div>
       </div>
     </main>
