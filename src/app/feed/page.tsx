@@ -2,6 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+// Without this, Next.js can statically cache this page at build time —
+// meaning it would show whatever posts existed the moment Vercel built it,
+// never picking up new ones afterward.
+export const dynamic = "force-dynamic";
+
 export default async function FeedPage() {
   const posts = await prisma.post.findMany({
     orderBy: { createdAt: "desc" },

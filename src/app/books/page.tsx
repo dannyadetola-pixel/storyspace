@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+// See feed/page.tsx for why this line matters — same static-caching gap.
+export const dynamic = "force-dynamic";
+
 export default async function BooksPage() {
   const books = await prisma.book.findMany({
     orderBy: { createdAt: "desc" },
