@@ -6,7 +6,18 @@ import { createClient } from "@supabase/supabase-js";
 // routes, never from a "use client" component.
 const supabase = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    // Required for the secret/service_role key to actually get admin
+    // privileges in a server-rendered environment like Next.js — without
+    // these, Supabase silently restricts it as if it were unauthenticated,
+    // which is what's been causing every "not found" error so far.
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  }
 );
 
 const BUCKET = "post-media";
