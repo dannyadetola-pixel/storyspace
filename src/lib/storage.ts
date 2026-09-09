@@ -10,12 +10,34 @@ const supabase = createClient(
 );
 
 const BUCKET = "post-media";
+let bucketEnsured = false;
+
+async function ensureBucketExists(): Promise<void> {
+  if (bucketEnsured) return;
+  const { error } = await supabase.storage.getBucket(BUCKET);
+  if (error) {
+    // Bucket doesn't exist (or isn't reachable) — create it fresh, public,
+    // so this never depends on someone having set it up correctly by hand.
+    const { error: createError } = await supabase.storage.createBucket(
+      BUCKET,
+      { public: true }
+    );
+    // Two near-simultaneous uploads could both reach this point before
+    // either finishes creating it — that's fine, not a real failure.
+    if (createError && !createError.message.toLowerCase().includes("exists")) {
+      throw createError;
+    }
+  }
+  bucketEnsured = true;
+}
 
 export async function uploadImageToSupabase(
   path: string,
   body: Buffer,
   contentType: string
 ): Promise<string> {
+  await ensureBucketExists();
+
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(path, body, { contentType, upsert: false });

@@ -34,8 +34,22 @@ export async function POST(req: Request) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const key = `posts/${session.user.id}/${Date.now()}-${file.name}`;
-  const mediaUrl = await uploadImageToSupabase(key, buffer, file.type);
+  const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, "-");
+  const key = `posts/${session.user.id}/${Date.now()}-${safeName}`;
+
+  let mediaUrl: string;
+  try {
+    mediaUrl = await uploadImageToSupabase(key, buffer, file.type);
+  } catch (err) {
+    console.error("Storage upload failed:", err);
+    return NextResponse.json(
+      {
+        error:
+          "Upload failed — the storage bucket may not exist yet or isn't public.",
+      },
+      { status: 500 }
+    );
+  }
 
   const post = await prisma.post.create({
     data: {
