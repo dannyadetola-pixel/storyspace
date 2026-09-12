@@ -47,6 +47,7 @@ export default async function FeedPage() {
                     src={post.mediaUrl}
                     alt={post.caption ?? "Post image"}
                     fill
+                    unoptimized
                     className="object-cover"
                   />
                 </div>
