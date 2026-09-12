@@ -7,6 +7,15 @@ import { prisma } from "@/lib/prisma";
 // never picking up new ones afterward.
 export const dynamic = "force-dynamic";
 
+// Converts a stored Supabase public URL into our own same-origin proxy
+// path — see api/media/[...path]/route.ts for why this exists.
+function toProxyUrl(mediaUrl: string): string {
+  const marker = "/storage/v1/object/public/";
+  const index = mediaUrl.indexOf(marker);
+  if (index === -1) return mediaUrl;
+  return `/api/media/${mediaUrl.slice(index + marker.length)}`;
+}
+
 export default async function FeedPage() {
   const posts = await prisma.post.findMany({
     orderBy: { createdAt: "desc" },
@@ -44,7 +53,7 @@ export default async function FeedPage() {
               {post.mediaType === "IMAGE" && (
                 <div className="relative w-full aspect-square">
                   <Image
-                    src={post.mediaUrl}
+                    src={toProxyUrl(post.mediaUrl)}
                     alt={post.caption ?? "Post image"}
                     fill
                     unoptimized
