@@ -21,7 +21,7 @@ export async function GET(
 
   let upstream: Response;
   try {
-    upstream = await fetch(supabaseUrl);
+    upstream = await fetch(supabaseUrl, { cache: "no-store" });
   } catch (err) {
     return NextResponse.json(
       { error: "fetch() itself threw", detail: String(err), supabaseUrl },
