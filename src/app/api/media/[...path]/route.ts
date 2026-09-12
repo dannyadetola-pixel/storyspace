@@ -17,10 +17,32 @@ export async function GET(
     .map(encodeURIComponent)
     .join("/")}`;
 
-  const upstream = await fetch(supabaseUrl);
+  console.log("[media proxy] fetching:", supabaseUrl);
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(supabaseUrl);
+  } catch (err) {
+    return NextResponse.json(
+      { error: "fetch() itself threw", detail: String(err), supabaseUrl },
+      { status: 502 }
+    );
+  }
+
+  console.log("[media proxy] upstream status:", upstream.status);
 
   if (!upstream.ok) {
-    return new NextResponse("Image not found", { status: 404 });
+    const body = await upstream.text();
+    return NextResponse.json(
+      {
+        error: "Upstream responded but not OK",
+        status: upstream.status,
+        statusText: upstream.statusText,
+        supabaseUrl,
+        body: body.slice(0, 500),
+      },
+      { status: upstream.status }
+    );
   }
 
   const buffer = await upstream.arrayBuffer();
