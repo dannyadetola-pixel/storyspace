@@ -26,7 +26,7 @@ export default function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label="Toggle dark mode"
-      className="text-sm text-app-text/70 dark:text-app-text-dark/70 hover:text-app-text dark:hover:text-app-text-dark underline underline-offset-2"
+      className="hover:text-app-text dark:hover:text-app-text-dark"
     >
       {isDark ? "Light mode" : "Dark mode"}
     </button>

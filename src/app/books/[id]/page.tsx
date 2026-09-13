@@ -69,7 +69,7 @@ export default async function BookPage({
             <Link
               key={chapter.id}
               href={`/books/${book.id}/chapters/${chapter.id}`}
-              className="flex items-center justify-between bg-app-surface dark:bg-app-surface-dark rounded-xl p-3 hover:opacity-90"
+              className="flex items-center justify-between bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-xl p-3 hover:opacity-90"
             >
               <span className="text-app-text dark:text-app-text-dark">
                 {chapter.order}. {chapter.title}

@@ -48,7 +48,7 @@ export default async function FeedPage() {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="bg-app-surface dark:bg-app-surface-dark rounded-2xl overflow-hidden"
+              className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl overflow-hidden"
             >
               {post.mediaType === "IMAGE" && (
                 <div className="relative w-full aspect-square">

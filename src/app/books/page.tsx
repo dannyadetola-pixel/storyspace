@@ -39,7 +39,7 @@ export default async function BooksPage() {
             <Link
               key={book.id}
               href={`/books/${book.id}`}
-              className="block bg-app-surface dark:bg-app-surface-dark rounded-2xl p-4 hover:opacity-90"
+              className="block bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 hover:opacity-90"
             >
               <h2 className="font-medium text-app-text dark:text-app-text-dark">
                 {book.title}
