@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import LikeButton from "@/components/LikeButton";
 
 // Without this, Next.js can statically cache this page at build time —
 // meaning it would show whatever posts existed the moment Vercel built it,
@@ -17,11 +19,27 @@ function toProxyUrl(mediaUrl: string): string {
 }
 
 export default async function FeedPage() {
+  const session = await auth();
+
   const posts = await prisma.post.findMany({
     orderBy: { createdAt: "desc" },
     include: { user: { select: { username: true, isVerified: true } } },
     take: 30,
   });
+
+  // One extra query instead of one-per-post (which would be 30 queries for
+  // a full page) — fetch every reaction on these posts at once, then build
+  // lookup maps for "how many" and "did the current user already like it".
+  const reactions = await prisma.reaction.findMany({
+    where: { targetType: "POST", targetId: { in: posts.map((p) => p.id) } },
+    select: { targetId: true, userId: true },
+  });
+  const countByPost = new Map<string, number>();
+  const likedByMe = new Set<string>();
+  for (const r of reactions) {
+    countByPost.set(r.targetId, (countByPost.get(r.targetId) ?? 0) + 1);
+    if (r.userId === session?.user?.id) likedByMe.add(r.targetId);
+  }
 
   return (
     <main className="min-h-screen px-4 py-10">
@@ -61,15 +79,25 @@ export default async function FeedPage() {
                   />
                 </div>
               )}
-              <div className="p-3 text-sm text-app-text dark:text-app-text-dark">
-                <span className="font-medium">{post.user.username}</span>
-                {post.user.isVerified && (
-                  <span
-                    aria-hidden="true"
-                    className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
+              <div className="p-3 space-y-2">
+                <div className="text-sm text-app-text dark:text-app-text-dark">
+                  <span className="font-medium">{post.user.username}</span>
+                  {post.user.isVerified && (
+                    <span
+                      aria-hidden="true"
+                      className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
+                    />
+                  )}
+                  {post.caption && <> — {post.caption}</>}
+                </div>
+                {session?.user && (
+                  <LikeButton
+                    targetType="POST"
+                    targetId={post.id}
+                    initialLiked={likedByMe.has(post.id)}
+                    initialCount={countByPost.get(post.id) ?? 0}
                   />
                 )}
-                {post.caption && <> — {post.caption}</>}
               </div>
             </div>
           ))}

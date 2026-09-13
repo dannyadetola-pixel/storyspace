@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import LikeButton from "@/components/LikeButton";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,7 @@ export default async function ChapterPage({
   params: Promise<{ id: string; chapterId: string }>;
 }) {
   const { id: bookId, chapterId } = await params;
+  const session = await auth();
 
   const chapter = await prisma.chapter.findUnique({
     where: { id: chapterId },
@@ -18,10 +21,25 @@ export default async function ChapterPage({
 
   if (!chapter || chapter.bookId !== bookId) notFound();
 
-  const [prevChapter, nextChapter] = await Promise.all([
-    prisma.chapter.findFirst({ where: { bookId, order: chapter.order - 1 } }),
-    prisma.chapter.findFirst({ where: { bookId, order: chapter.order + 1 } }),
-  ]);
+  const [prevChapter, nextChapter, reactionCount, myReaction] =
+    await Promise.all([
+      prisma.chapter.findFirst({ where: { bookId, order: chapter.order - 1 } }),
+      prisma.chapter.findFirst({ where: { bookId, order: chapter.order + 1 } }),
+      prisma.reaction.count({
+        where: { targetType: "CHAPTER", targetId: chapter.id },
+      }),
+      session?.user
+        ? prisma.reaction.findUnique({
+            where: {
+              userId_targetType_targetId: {
+                userId: session.user.id,
+                targetType: "CHAPTER",
+                targetId: chapter.id,
+              },
+            },
+          })
+        : null,
+    ]);
 
   return (
     <main className="min-h-screen px-4 py-10">
@@ -42,6 +60,17 @@ export default async function ChapterPage({
         <div className="font-serif text-lg leading-relaxed text-app-text dark:text-app-text-dark whitespace-pre-wrap">
           {chapter.body}
         </div>
+
+        {session?.user && (
+          <div className="mt-6">
+            <LikeButton
+              targetType="CHAPTER"
+              targetId={chapter.id}
+              initialLiked={!!myReaction}
+              initialCount={reactionCount}
+            />
+          </div>
+        )}
 
         <div className="mt-10 flex items-center justify-between text-sm">
           {prevChapter ? (
