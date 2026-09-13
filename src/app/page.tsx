@@ -1,4 +1,14 @@
 import Link from "next/link";
+import Image from "next/image";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+function toProxyUrl(mediaUrl: string): string {
+  const marker = "/storage/v1/object/public/";
+  const index = mediaUrl.indexOf(marker);
+  if (index === -1) return mediaUrl;
+  return `/api/media/${mediaUrl.slice(index + marker.length)}`;
+}
 
 // Four line-art shapes representing what the app actually does: writing/
 // reading, messaging, reactions, and photo posts. Defined once, reused
@@ -49,7 +59,122 @@ const iconProps = {
   strokeLinejoin: "round" as const,
 };
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const session = await auth();
+  return session?.user ? <HomeFeed /> : <MarketingHome />;
+}
+
+async function HomeFeed() {
+  const [posts, chapters] = await Promise.all([
+    prisma.post.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { username: true, isVerified: true } } },
+      take: 15,
+    }),
+    prisma.chapter.findMany({
+      orderBy: { publishedAt: "desc" },
+      include: {
+        book: {
+          select: {
+            id: true,
+            title: true,
+            user: { select: { username: true, isVerified: true } },
+          },
+        },
+      },
+      take: 15,
+    }),
+  ]);
+
+  // Two different models, merged into one reverse-chronological list so it
+  // reads as an actual feed rather than two separate sections. What this
+  // isn't yet: personalized. True curation by what someone actually reads
+  // needs view-tracking that doesn't exist — this is "recent, from
+  // everyone" as an honest starting point, not a fake recommendation engine.
+  const items = [
+    ...posts.map((p) => ({ kind: "post" as const, date: p.createdAt, post: p })),
+    ...chapters.map((c) => ({
+      kind: "chapter" as const,
+      date: c.publishedAt,
+      chapter: c,
+    })),
+  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  return (
+    <main className="min-h-screen px-4 py-10">
+      <div className="max-w-md mx-auto space-y-6">
+        <h1 className="text-xl font-medium text-app-text dark:text-app-text-dark">
+          Home
+        </h1>
+
+        {items.length === 0 && (
+          <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
+            Nothing here yet — try the Feed or Books pages directly.
+          </p>
+        )}
+
+        <div className="space-y-6">
+          {items.map((item) =>
+            item.kind === "post" ? (
+              <div
+                key={`post-${item.post.id}`}
+                className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl overflow-hidden"
+              >
+                {item.post.mediaType === "IMAGE" && (
+                  <div className="relative w-full aspect-square">
+                    <Image
+                      src={toProxyUrl(item.post.mediaUrl)}
+                      alt={item.post.caption ?? "Post image"}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+                <div className="p-3 text-sm text-app-text dark:text-app-text-dark">
+                  <span className="font-medium">{item.post.user.username}</span>
+                  {item.post.user.isVerified && (
+                    <span
+                      aria-hidden="true"
+                      className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
+                    />
+                  )}
+                  {item.post.caption && <> — {item.post.caption}</>}
+                </div>
+              </div>
+            ) : (
+              <Link
+                key={`chapter-${item.chapter.id}`}
+                href={`/books/${item.chapter.book.id}/chapters/${item.chapter.id}`}
+                className="block bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 hover:opacity-90"
+              >
+                <p className="text-xs font-medium text-app-secondary dark:text-app-secondary-dark">
+                  New chapter
+                </p>
+                <h2 className="font-medium text-app-text dark:text-app-text-dark">
+                  {item.chapter.book.title} — {item.chapter.title}
+                </h2>
+                <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
+                  {item.chapter.book.user.username}
+                  {item.chapter.book.user.isVerified && (
+                    <span
+                      aria-hidden="true"
+                      className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
+                    />
+                  )}
+                </p>
+              </Link>
+            )
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function MarketingHome() {
   return (
     <main className="relative overflow-hidden flex flex-col items-center justify-center px-4 py-24 text-center min-h-[calc(100vh-3.5rem)]">
       {/* Purely decorative — hidden from screen readers, sits behind the content.

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { auth, signOut } from "@/lib/auth";
 import ThemeToggle from "./ThemeToggle";
 
 export default async function Header() {
@@ -29,12 +29,27 @@ export default async function Header() {
             Books
           </Link>
           {session?.user ? (
-            <Link
-              href="/profile"
-              className="hover:text-app-text dark:hover:text-app-text-dark"
-            >
-              Profile
-            </Link>
+            <>
+              <Link
+                href="/profile"
+                className="hover:text-app-text dark:hover:text-app-text-dark"
+              >
+                Profile
+              </Link>
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/" });
+                }}
+              >
+                <button
+                  type="submit"
+                  className="hover:text-app-text dark:hover:text-app-text-dark"
+                >
+                  Log out
+                </button>
+              </form>
+            </>
           ) : (
             <Link
               href="/login"
