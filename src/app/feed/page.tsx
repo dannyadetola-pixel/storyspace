@@ -3,6 +3,8 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LikeButton from "@/components/LikeButton";
+import CommentSection from "@/components/CommentSection";
+import ShareButton from "@/components/ShareButton";
 
 // Without this, Next.js can statically cache this page at build time —
 // meaning it would show whatever posts existed the moment Vercel built it,
@@ -30,15 +32,38 @@ export default async function FeedPage() {
   // One extra query instead of one-per-post (which would be 30 queries for
   // a full page) — fetch every reaction on these posts at once, then build
   // lookup maps for "how many" and "did the current user already like it".
-  const reactions = await prisma.reaction.findMany({
-    where: { targetType: "POST", targetId: { in: posts.map((p) => p.id) } },
-    select: { targetId: true, userId: true },
-  });
+  // Wrapped separately from the posts query above: if this one fails, the
+  // feed should still show posts (just without like counts) rather than
+  // the whole page going down over something non-essential.
   const countByPost = new Map<string, number>();
   const likedByMe = new Set<string>();
-  for (const r of reactions) {
-    countByPost.set(r.targetId, (countByPost.get(r.targetId) ?? 0) + 1);
-    if (r.userId === session?.user?.id) likedByMe.add(r.targetId);
+  try {
+    const reactions = await prisma.reaction.findMany({
+      where: { targetType: "POST", targetId: { in: posts.map((p) => p.id) } },
+      select: { targetId: true, userId: true },
+    });
+    for (const r of reactions) {
+      countByPost.set(r.targetId, (countByPost.get(r.targetId) ?? 0) + 1);
+      if (r.userId === session?.user?.id) likedByMe.add(r.targetId);
+    }
+  } catch (err) {
+    console.error("Failed to load reactions (feed still renders):", err);
+  }
+
+  const commentCountByPost = new Map<string, number>();
+  try {
+    const comments = await prisma.comment.findMany({
+      where: { targetType: "POST", targetId: { in: posts.map((p) => p.id) } },
+      select: { targetId: true },
+    });
+    for (const c of comments) {
+      commentCountByPost.set(
+        c.targetId,
+        (commentCountByPost.get(c.targetId) ?? 0) + 1
+      );
+    }
+  } catch (err) {
+    console.error("Failed to load comment counts (feed still renders):", err);
   }
 
   return (
@@ -90,14 +115,22 @@ export default async function FeedPage() {
                   )}
                   {post.caption && <> — {post.caption}</>}
                 </div>
-                {session?.user && (
-                  <LikeButton
+                <div className="flex items-start gap-5">
+                  {session?.user && (
+                    <LikeButton
+                      targetType="POST"
+                      targetId={post.id}
+                      initialLiked={likedByMe.has(post.id)}
+                      initialCount={countByPost.get(post.id) ?? 0}
+                    />
+                  )}
+                  <CommentSection
                     targetType="POST"
                     targetId={post.id}
-                    initialLiked={likedByMe.has(post.id)}
-                    initialCount={countByPost.get(post.id) ?? 0}
+                    initialCount={commentCountByPost.get(post.id) ?? 0}
                   />
-                )}
+                  <ShareButton path="/feed" title={`${post.user.username} on StorySpace`} />
+                </div>
               </div>
             </div>
           ))}

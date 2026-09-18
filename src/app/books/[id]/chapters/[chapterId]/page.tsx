@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LikeButton from "@/components/LikeButton";
+import CommentSection from "@/components/CommentSection";
+import ShareButton from "@/components/ShareButton";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,7 @@ export default async function ChapterPage({
 
   if (!chapter || chapter.bookId !== bookId) notFound();
 
-  const [prevChapter, nextChapter, reactionCount, myReaction] =
+  const [prevChapter, nextChapter, reactionCount, myReaction, commentCount] =
     await Promise.all([
       prisma.chapter.findFirst({ where: { bookId, order: chapter.order - 1 } }),
       prisma.chapter.findFirst({ where: { bookId, order: chapter.order + 1 } }),
@@ -39,6 +41,9 @@ export default async function ChapterPage({
             },
           })
         : null,
+      prisma.comment.count({
+        where: { targetType: "CHAPTER", targetId: chapter.id },
+      }),
     ]);
 
   return (
@@ -61,16 +66,25 @@ export default async function ChapterPage({
           {chapter.body}
         </div>
 
-        {session?.user && (
-          <div className="mt-6">
+        <div className="mt-6 flex items-start gap-5">
+          {session?.user && (
             <LikeButton
               targetType="CHAPTER"
               targetId={chapter.id}
               initialLiked={!!myReaction}
               initialCount={reactionCount}
             />
-          </div>
-        )}
+          )}
+          <CommentSection
+            targetType="CHAPTER"
+            targetId={chapter.id}
+            initialCount={commentCount}
+          />
+          <ShareButton
+            path={`/books/${bookId}/chapters/${chapter.id}`}
+            title={`${chapter.book.title} — ${chapter.title}`}
+          />
+        </div>
 
         <div className="mt-10 flex items-center justify-between text-sm">
           {prevChapter ? (

@@ -2,6 +2,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import LikeButton from "@/components/LikeButton";
+import CommentSection from "@/components/CommentSection";
+import ShareButton from "@/components/ShareButton";
 
 function toProxyUrl(mediaUrl: string): string {
   const marker = "/storage/v1/object/public/";
@@ -67,6 +70,8 @@ export default async function Home() {
 }
 
 async function HomeFeed() {
+  const session = await auth();
+
   const [posts, chapters] = await Promise.all([
     prisma.post.findMany({
       orderBy: { createdAt: "desc" },
@@ -87,6 +92,38 @@ async function HomeFeed() {
       take: 15,
     }),
   ]);
+
+  // Same batching approach as the dedicated feed page — one query for all
+  // reactions and one for all comment counts, rather than one per post.
+  // Wrapped so a failure here degrades the action row, not the whole page.
+  const postIds = posts.map((p) => p.id);
+  const likeCountByPost = new Map<string, number>();
+  const likedByMe = new Set<string>();
+  const commentCountByPost = new Map<string, number>();
+  try {
+    const [reactions, comments] = await Promise.all([
+      prisma.reaction.findMany({
+        where: { targetType: "POST", targetId: { in: postIds } },
+        select: { targetId: true, userId: true },
+      }),
+      prisma.comment.findMany({
+        where: { targetType: "POST", targetId: { in: postIds } },
+        select: { targetId: true },
+      }),
+    ]);
+    for (const r of reactions) {
+      likeCountByPost.set(r.targetId, (likeCountByPost.get(r.targetId) ?? 0) + 1);
+      if (r.userId === session?.user?.id) likedByMe.add(r.targetId);
+    }
+    for (const c of comments) {
+      commentCountByPost.set(
+        c.targetId,
+        (commentCountByPost.get(c.targetId) ?? 0) + 1
+      );
+    }
+  } catch (err) {
+    console.error("Failed to load reactions/comments (home still renders):", err);
+  }
 
   // Two different models, merged into one reverse-chronological list so it
   // reads as an actual feed rather than two separate sections. What this
@@ -133,15 +170,36 @@ async function HomeFeed() {
                     />
                   </div>
                 )}
-                <div className="p-3 text-sm text-app-text dark:text-app-text-dark">
-                  <span className="font-medium">{item.post.user.username}</span>
-                  {item.post.user.isVerified && (
-                    <span
-                      aria-hidden="true"
-                      className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
+                <div className="p-3 space-y-2">
+                  <div className="text-sm text-app-text dark:text-app-text-dark">
+                    <span className="font-medium">{item.post.user.username}</span>
+                    {item.post.user.isVerified && (
+                      <span
+                        aria-hidden="true"
+                        className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
+                      />
+                    )}
+                    {item.post.caption && <> — {item.post.caption}</>}
+                  </div>
+                  <div className="flex items-start gap-5">
+                    {session?.user && (
+                      <LikeButton
+                        targetType="POST"
+                        targetId={item.post.id}
+                        initialLiked={likedByMe.has(item.post.id)}
+                        initialCount={likeCountByPost.get(item.post.id) ?? 0}
+                      />
+                    )}
+                    <CommentSection
+                      targetType="POST"
+                      targetId={item.post.id}
+                      initialCount={commentCountByPost.get(item.post.id) ?? 0}
                     />
-                  )}
-                  {item.post.caption && <> — {item.post.caption}</>}
+                    <ShareButton
+                      path="/feed"
+                      title={`${item.post.user.username} on StorySpace`}
+                    />
+                  </div>
                 </div>
               </div>
             ) : (

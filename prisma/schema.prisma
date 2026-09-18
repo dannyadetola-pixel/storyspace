@@ -72,6 +72,7 @@ model User {
   posts         Post[]
   books         Book[]
   reactions     Reaction[]
+  comments      Comment[]
   messages      Message[]
   conversations ConversationParticipant[]
   earnings      Earning[]
@@ -138,10 +139,10 @@ model Chapter {
   @@unique([bookId, order])
 }
 
-// Reactions target either a Post or a Chapter. Prisma can't express a real
-// foreign key to "one of two tables," so targetId is a plain string and the
-// app layer is responsible for making sure it points at a real row —
-// see lib/reactions.ts once that's built.
+// Reactions and Comments both target either a Post or a Chapter. Prisma
+// can't express a real foreign key to "one of two tables," so targetId is
+// a plain string and the app layer is responsible for making sure it
+// points at a real row.
 enum ReactionTargetType {
   POST
   CHAPTER
@@ -167,6 +168,19 @@ model Reaction {
 
   @@unique([userId, targetType, targetId])
   @@index([targetType, targetId])
+}
+
+model Comment {
+  id         String             @id @default(cuid())
+  userId     String
+  targetType ReactionTargetType
+  targetId   String
+  body       String             @db.Text
+  createdAt  DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId, createdAt])
 }
 
 model Conversation {
