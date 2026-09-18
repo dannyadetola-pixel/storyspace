@@ -88,7 +88,7 @@ export default async function FeedPage() {
         )}
 
         <div className="space-y-6">
-          {posts.map((post) => (
+          {posts.map((post, index) => (
             <div
               key={post.id}
               className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl overflow-hidden"
@@ -100,6 +100,7 @@ export default async function FeedPage() {
                     alt={post.caption ?? "Post image"}
                     fill
                     unoptimized
+                    loading={index === 0 ? "eager" : "lazy"}
                     className="object-cover"
                   />
                 </div>
@@ -129,7 +130,7 @@ export default async function FeedPage() {
                     targetId={post.id}
                     initialCount={commentCountByPost.get(post.id) ?? 0}
                   />
-                  <ShareButton path="/feed" title={`${post.user.username} on StorySpace`} />
+                  <ShareButton path={`/feed/${post.id}`} title={`${post.user.username} on StorySpace`} />
                 </div>
               </div>
             </div>

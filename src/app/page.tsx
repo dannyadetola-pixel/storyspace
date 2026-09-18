@@ -153,7 +153,7 @@ async function HomeFeed() {
         )}
 
         <div className="space-y-6">
-          {items.map((item) =>
+          {items.map((item, index) =>
             item.kind === "post" ? (
               <div
                 key={`post-${item.post.id}`}
@@ -166,6 +166,7 @@ async function HomeFeed() {
                       alt={item.post.caption ?? "Post image"}
                       fill
                       unoptimized
+                      loading={index === 0 ? "eager" : "lazy"}
                       className="object-cover"
                     />
                   </div>
@@ -196,7 +197,7 @@ async function HomeFeed() {
                       initialCount={commentCountByPost.get(item.post.id) ?? 0}
                     />
                     <ShareButton
-                      path="/feed"
+                      path={`/feed/${item.post.id}`}
                       title={`${item.post.user.username} on StorySpace`}
                     />
                   </div>
