@@ -22,6 +22,12 @@ export default async function Header() {
       >
         Books
       </Link>
+      <Link
+        href="/explore"
+        className="hover:text-app-text dark:hover:text-app-text-dark"
+      >
+        Explore
+      </Link>
       {session?.user ? (
         <>
           <Link
