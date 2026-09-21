@@ -37,6 +37,13 @@ export default async function Header() {
             Profile
           </Link>
           <form
+            // Stops this click from also triggering the mobile dropdown's
+            // close-on-click-anywhere handler in the same instant — that
+            // handler removes this form from the page, which on mobile can
+            // race the actual form submission and cancel it before the
+            // server action fires. The redirect afterward closes the menu
+            // naturally anyway, since it's a full navigation.
+            onClick={(e) => e.stopPropagation()}
             action={async () => {
               "use server";
               await signOut({ redirectTo: "/" });
