@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import ThemeToggle from "./ThemeToggle";
 import MobileNav from "./MobileNav";
+import LogoutButton from "./LogoutButton";
 
 export default async function Header() {
   const session = await auth();
@@ -36,26 +37,7 @@ export default async function Header() {
           >
             Profile
           </Link>
-          <form
-            // Stops this click from also triggering the mobile dropdown's
-            // close-on-click-anywhere handler in the same instant — that
-            // handler removes this form from the page, which on mobile can
-            // race the actual form submission and cancel it before the
-            // server action fires. The redirect afterward closes the menu
-            // naturally anyway, since it's a full navigation.
-            onClick={(e) => e.stopPropagation()}
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}
-          >
-            <button
-              type="submit"
-              className="hover:text-app-text dark:hover:text-app-text-dark"
-            >
-              Log out
-            </button>
-          </form>
+          <LogoutButton />
         </>
       ) : (
         <Link
