@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import MessageButton from "@/components/MessageButton";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,7 @@ export default async function PublicProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
+  const session = await auth();
 
   const user = await prisma.user.findUnique({
     where: { username },
@@ -26,18 +29,25 @@ export default async function PublicProfilePage({
 
   if (!user) notFound();
 
+  const isOwnProfile = session?.user?.username === user.username;
+
   return (
     <main className="min-h-screen px-4 py-10">
       <div className="max-w-sm mx-auto space-y-4">
-        <h1 className="text-xl font-medium text-app-text dark:text-app-text-dark">
-          {user.username}
-          {user.isVerified && (
-            <span
-              aria-hidden="true"
-              className="ml-1 inline-block w-4 h-4 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-            />
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-medium text-app-text dark:text-app-text-dark">
+            {user.username}
+            {user.isVerified && (
+              <span
+                aria-hidden="true"
+                className="ml-1 inline-block w-4 h-4 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
+              />
+            )}
+          </h1>
+          {session?.user && !isOwnProfile && (
+            <MessageButton username={user.username} />
           )}
-        </h1>
+        </div>
         <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
           {user.bio || "No bio yet"}
         </p>

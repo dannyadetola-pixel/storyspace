@@ -32,6 +32,12 @@ export default async function Header() {
       {session?.user ? (
         <>
           <Link
+            href="/chats"
+            className="hover:text-app-text dark:hover:text-app-text-dark"
+          >
+            Chats
+          </Link>
+          <Link
             href="/profile"
             className="hover:text-app-text dark:hover:text-app-text-dark"
           >
