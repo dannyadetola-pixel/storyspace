@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import SendMessageForm from "@/components/SendMessageForm";
+import MessageList from "@/components/MessageList";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ export default async function ConversationPage({
   const messages = await prisma.message.findMany({
     where: { conversationId: id },
     orderBy: { createdAt: "asc" },
-    include: { sender: { select: { username: true } } },
+    select: { id: true, body: true, senderId: true },
   });
 
   const other = conversation.participants.find(
@@ -66,32 +67,11 @@ export default async function ConversationPage({
           </h1>
         </div>
 
-        <div className="flex-1 space-y-2 overflow-y-auto">
-          {messages.length === 0 && (
-            <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">
-              No messages yet — say hello.
-            </p>
-          )}
-          {messages.map((message) => {
-            const isMine = message.senderId === session.user.id;
-            return (
-              <div
-                key={message.id}
-                className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={
-                    isMine
-                      ? "bg-app-primary dark:bg-app-primary-dark text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-[75%] text-sm"
-                      : "bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 text-app-text dark:text-app-text-dark rounded-2xl rounded-bl-sm px-4 py-2 max-w-[75%] text-sm"
-                  }
-                >
-                  {message.body}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <MessageList
+          conversationId={conversation.id}
+          initialMessages={messages}
+          currentUserId={session.user.id}
+        />
 
         <SendMessageForm conversationId={conversation.id} />
       </div>
