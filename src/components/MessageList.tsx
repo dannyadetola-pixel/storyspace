@@ -20,10 +20,16 @@ export default function MessageList({
   conversationId,
   initialMessages,
   currentUserId,
+  isGroup,
+  participantsById,
 }: {
   conversationId: string;
   initialMessages: Message[];
   currentUserId: string;
+  isGroup: boolean;
+  // Live messages arrive as raw rows with only a senderId — this maps IDs
+  // back to usernames so group messages can show who sent them.
+  participantsById: Record<string, string>;
 }) {
   const [messages, setMessages] = useState(initialMessages);
 
@@ -73,6 +79,11 @@ export default function MessageList({
                   : "bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 text-app-text dark:text-app-text-dark rounded-2xl rounded-bl-sm px-4 py-2 max-w-[75%] text-sm"
               }
             >
+              {isGroup && !isMine && (
+                <p className="text-xs font-medium text-app-secondary dark:text-app-secondary-dark mb-0.5">
+                  {participantsById[message.senderId] ?? "Unknown"}
+                </p>
+              )}
               {message.body}
             </div>
           </div>

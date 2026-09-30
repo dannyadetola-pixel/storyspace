@@ -30,9 +30,17 @@ export default async function ChatsPage() {
   return (
     <main className="min-h-screen px-4 py-10">
       <div className="max-w-md mx-auto space-y-6">
-        <h1 className="text-xl font-medium text-app-text dark:text-app-text-dark">
-          Chats
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-medium text-app-text dark:text-app-text-dark">
+            Chats
+          </h1>
+          <Link
+            href="/chats/new-group"
+            className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+          >
+            New group
+          </Link>
+        </div>
 
         {sorted.length === 0 && (
           <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
@@ -43,7 +51,6 @@ export default async function ChatsPage() {
 
         <div className="space-y-2">
           {sorted.map((conversation) => {
-            // For a 1:1 chat, show the other person, not yourself.
             const other = conversation.participants.find(
               (p) => p.userId !== session.user.id
             );

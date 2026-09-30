@@ -46,6 +46,10 @@ export default async function ConversationPage({
     ? conversation.name ?? "Group chat"
     : other?.user.username ?? "Unknown user";
 
+  const participantsById = Object.fromEntries(
+    conversation.participants.map((p) => [p.userId, p.user.username])
+  );
+
   return (
     <main className="min-h-screen px-4 py-10 flex flex-col">
       <div className="max-w-md w-full mx-auto flex flex-col flex-1 space-y-4">
@@ -71,6 +75,8 @@ export default async function ConversationPage({
           conversationId={conversation.id}
           initialMessages={messages}
           currentUserId={session.user.id}
+          isGroup={conversation.isGroup}
+          participantsById={participantsById}
         />
 
         <SendMessageForm conversationId={conversation.id} />
