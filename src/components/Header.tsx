@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 import ThemeToggle from "./ThemeToggle";
 import MobileNav from "./MobileNav";
 import LogoutButton from "./LogoutButton";
@@ -7,8 +8,6 @@ import LogoutButton from "./LogoutButton";
 export default async function Header() {
   const session = await auth();
 
-  // Defined once, reused in both the desktop nav and the mobile dropdown —
-  // same links, just a different container around them.
   const navLinks = (
     <>
       <Link
@@ -43,6 +42,14 @@ export default async function Header() {
           >
             Profile
           </Link>
+          {isAdmin(session) && (
+            <Link
+              href="/admin"
+              className="hover:text-app-text dark:hover:text-app-text-dark"
+            >
+              Admin
+            </Link>
+          )}
           <LogoutButton />
         </>
       ) : (
@@ -58,7 +65,7 @@ export default async function Header() {
   );
 
   return (
-    <header className="border-b border-black/5 dark:border-white/10">
+    <header className="relative border-b border-black/5 dark:border-white/10">
       <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link
           href="/"
@@ -67,13 +74,15 @@ export default async function Header() {
           StorySpace
         </Link>
 
-        {/* Desktop: normal horizontal nav, hidden below the md breakpoint */}
         <nav className="hidden md:flex items-center gap-5 text-sm text-app-text/70 dark:text-app-text-dark/70">
           {navLinks}
         </nav>
 
-        {/* Mobile: hamburger + dropdown, hidden at md and above */}
-        <MobileNav>{navLinks}</MobileNav>
+        <MobileNav>
+          <div className="flex flex-col gap-4 text-app-text/70 dark:text-app-text-dark/70">
+            {navLinks}
+          </div>
+        </MobileNav>
       </div>
     </header>
   );

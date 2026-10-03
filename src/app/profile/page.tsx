@@ -3,12 +3,18 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
+    include: {
+      verificationRequest: { select: { status: true } },
+      paymentEligibilityRequest: { select: { status: true } },
+    },
   });
   if (!user) redirect("/login");
 
@@ -27,12 +33,49 @@ export default async function ProfilePage() {
         <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
           {user.bio || "No bio yet"}
         </p>
+
         <Link
           href="/books/new"
           className="inline-block pt-1 text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
         >
           Start a new book
         </Link>
+
+        <div className="pt-3 space-y-1 border-t border-black/5 dark:border-white/10">
+          {user.isVerified ? (
+            <p className="text-xs text-app-text/50 dark:text-app-text-dark/50">
+              Verified account
+            </p>
+          ) : user.verificationRequest?.status === "PENDING" ? (
+            <p className="text-xs text-app-text/50 dark:text-app-text-dark/50">
+              Verification request pending
+            </p>
+          ) : (
+            <Link
+              href="/verify"
+              className="block text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+            >
+              Request verification
+            </Link>
+          )}
+
+          {user.isPaymentEligible ? (
+            <p className="text-xs text-app-text/50 dark:text-app-text-dark/50">
+              Approved for payments
+            </p>
+          ) : user.paymentEligibilityRequest?.status === "PENDING" ? (
+            <p className="text-xs text-app-text/50 dark:text-app-text-dark/50">
+              Payment eligibility request pending
+            </p>
+          ) : (
+            <Link
+              href="/payment-eligibility"
+              className="block text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+            >
+              Request payment eligibility
+            </Link>
+          )}
+        </div>
       </div>
     </main>
   );
