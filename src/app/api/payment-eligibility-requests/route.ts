@@ -8,10 +8,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  const { bankAccountNo, bankCode } = await req.json();
-  if (!bankAccountNo || !bankCode) {
+  const { bankAccountNo, bankCode, phoneNumber } = await req.json();
+  if (!bankAccountNo || !bankCode || !phoneNumber) {
     return NextResponse.json(
-      { error: "Bank account number and bank code are required" },
+      { error: "Bank account number, bank code, and phone number are required" },
       { status: 400 }
     );
   }
@@ -22,11 +22,12 @@ export async function POST(req: Request) {
       update: {
         bankAccountNo,
         bankCode,
+        phoneNumber,
         status: "PENDING",
         reviewedAt: null,
         submittedAt: new Date(),
       },
-      create: { userId: session.user.id, bankAccountNo, bankCode },
+      create: { userId: session.user.id, bankAccountNo, bankCode, phoneNumber },
     });
     return NextResponse.json(request);
   } catch (err) {

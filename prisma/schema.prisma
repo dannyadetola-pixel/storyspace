@@ -54,18 +54,19 @@ model VerificationToken {
 // ─────────────────────────────────────────────
 
 model User {
-  id                String    @id @default(cuid())
-  username          String    @unique
-  email             String    @unique
-  emailVerified     DateTime?
-  passwordHash      String? // null for users who only ever used Google sign-in
-  name              String?
-  bio               String?
-  avatarUrl         String?
-  isVerified        Boolean   @default(false) // the Instagram-style checkmark, reviewed by you
-  isPaymentEligible Boolean   @default(false) // reviewed by you before payouts can flow
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                      String    @id @default(cuid())
+  username                String    @unique
+  email                   String    @unique
+  emailVerified           DateTime?
+  passwordHash            String? // null for users who only ever used Google sign-in
+  name                    String?
+  bio                     String?
+  avatarUrl               String?
+  isVerified              Boolean   @default(false) // the Instagram-style checkmark, reviewed by you
+  isPaymentEligible       Boolean   @default(false) // reviewed by you before payouts can flow
+  flutterwaveSubaccountId String? // set once their eligibility request is approved and a payout subaccount is created
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   accounts      Account[]
   sessions      Session[]
@@ -242,6 +243,7 @@ model PaymentEligibilityRequest {
   userId        String        @unique
   bankAccountNo String? // collected as part of the request itself
   bankCode      String?
+  phoneNumber   String? // required by Flutterwave to create the payout subaccount
   status        RequestStatus @default(PENDING)
   submittedAt   DateTime      @default(now())
   reviewedAt    DateTime?

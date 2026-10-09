@@ -7,6 +7,7 @@ export default function PaymentEligibilityForm() {
   const router = useRouter();
   const [bankAccountNo, setBankAccountNo] = useState("");
   const [bankCode, setBankCode] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -19,7 +20,7 @@ export default function PaymentEligibilityForm() {
     const res = await fetch("/api/payment-eligibility-requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bankAccountNo, bankCode }),
+      body: JSON.stringify({ bankAccountNo, bankCode, phoneNumber }),
     });
 
     if (!res.ok) {
@@ -95,9 +96,26 @@ export default function PaymentEligibilityForm() {
           />
         </div>
 
+        <div>
+          <label
+            htmlFor="phoneNumber"
+            className="block text-sm mb-1 text-app-text/70 dark:text-app-text-dark/70"
+          >
+            Phone number
+          </label>
+          <input
+            id="phoneNumber"
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            required
+            className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-app-text dark:text-app-text-dark focus:outline-none focus:ring-2 focus:ring-app-primary dark:focus:ring-app-primary-dark"
+          />
+        </div>
+
         <p className="text-xs text-app-text/50 dark:text-app-text-dark/50">
-          These details are only used to verify eligibility for payouts once
-          the payment system itself is live — reviewed by hand for now.
+          These details are used to set up your payout account once approved
+          — reviewed by hand before anything is created.
         </p>
 
         <button
