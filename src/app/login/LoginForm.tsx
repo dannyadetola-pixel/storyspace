@@ -28,6 +28,7 @@ export default function LoginForm() {
     if (res?.error) {
       setError("That email or password didn't match");
     } else {
+      router.refresh();
       router.push("/");
     }
   }

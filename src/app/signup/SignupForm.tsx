@@ -33,6 +33,7 @@ export default function SignupForm() {
 
     await signIn("credentials", { email, password, redirect: false });
     setSubmitting(false);
+    router.refresh();
     router.push("/");
   }
 
