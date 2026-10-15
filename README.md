@@ -51,6 +51,18 @@ Everything here was hand-written and carefully reviewed, but it has **not** been
 
 If you'd rather skip Google for now, leave those two fields blank — email/password signup still works on its own.
 
+### Gmail password-reset email
+
+Password-reset mail uses Gmail API permissions separately from Google sign-in. The existing OAuth client ID and secret can be reused, but the mailbox must grant the `https://www.googleapis.com/auth/gmail.send` scope and provide a refresh token.
+
+1. In Google Cloud Console, enable the **Gmail API** for the same project as your OAuth client.
+2. Add `https://www.googleapis.com/auth/gmail.send` to the OAuth consent screen's requested scopes. If the app is in testing mode, add the sending mailbox as a test user.
+3. In [OAuth 2.0 Playground](https://developers.google.com/oauthplayground), open settings, enable **Use your own OAuth credentials**, and enter `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+4. Authorize the `https://www.googleapis.com/auth/gmail.send` scope using the mailbox that should send reset emails. Exchange the code for tokens and copy the refresh token.
+5. Set `GMAIL_USER` to that mailbox, `GMAIL_REFRESH_TOKEN` to the refresh token, and `APP_URL` to the app's origin in `.env` and in your deployment environment. In production, `APP_URL` must use HTTPS.
+
+Run `npm run prisma:migrate` to create the password-reset token table before using the flow. Keep the refresh token secret. Google testing-mode refresh tokens can expire; publish/configure the OAuth consent screen appropriately for production.
+
 ## 5. Generate your auth secret
 
 ```

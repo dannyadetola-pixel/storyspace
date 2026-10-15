@@ -104,6 +104,15 @@ export default function SignupForm() {
           />
         </div>
 
+        <p className="-mt-2 text-right text-sm">
+          <Link
+            href="/forgot-password"
+            className="text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+          >
+            Forgot password?
+          </Link>
+        </p>
+
         <button
           type="submit"
           disabled={submitting}
