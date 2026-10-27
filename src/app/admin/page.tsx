@@ -78,9 +78,8 @@ export default async function AdminPage() {
                 {request.user.username}
               </p>
               <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
-                Acct: {request.bankAccountNo} · Bank code: {request.bankCode}
-                {" · "}
-                {request.phoneNumber}
+                {request.accountName} · Acct: {request.bankAccountNo} · Bank
+                code: {request.bankCode} · {request.phoneNumber}
               </p>
               <AdminRequestActions
                 kind="payment-eligibility-requests"

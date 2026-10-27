@@ -21,7 +21,7 @@ export async function POST(
 
   const request = await prisma.paymentEligibilityRequest.findUnique({
     where: { id },
-    include: { user: { select: { id: true, username: true } } },
+    include: { user: { select: { email: true } } },
   });
   if (!request) {
     return NextResponse.json({ error: "Request not found" }, { status: 404 });
@@ -39,9 +39,14 @@ export async function POST(
   // rejects this (bad bank details, etc.), the request simply stays
   // pending with a clear error — never flagged "approved" without an
   // actual account behind it to receive money.
-  if (!request.bankAccountNo || !request.bankCode || !request.phoneNumber) {
+  if (
+    !request.accountName ||
+    !request.bankAccountNo ||
+    !request.bankCode ||
+    !request.phoneNumber
+  ) {
     return NextResponse.json(
-      { error: "Request is missing bank details or phone number" },
+      { error: "Request is missing required details" },
       { status: 400 }
     );
   }
@@ -50,8 +55,9 @@ export async function POST(
     const { subaccountId } = await createFlutterwaveSubaccount({
       accountBank: request.bankCode,
       accountNumber: request.bankAccountNo,
-      businessName: request.user.username,
+      businessName: request.accountName,
       businessMobile: request.phoneNumber,
+      businessEmail: request.user.email,
     });
 
     await prisma.user.update({

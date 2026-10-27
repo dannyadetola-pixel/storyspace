@@ -8,10 +8,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  const { bankAccountNo, bankCode, phoneNumber } = await req.json();
-  if (!bankAccountNo || !bankCode || !phoneNumber) {
+  const { accountName, bankAccountNo, bankCode, phoneNumber } = await req.json();
+  if (!accountName || !bankAccountNo || !bankCode || !phoneNumber) {
     return NextResponse.json(
-      { error: "Bank account number, bank code, and phone number are required" },
+      {
+        error:
+          "Full name, bank, account number, and phone number are all required",
+      },
       { status: 400 }
     );
   }
@@ -20,6 +23,7 @@ export async function POST(req: Request) {
     const request = await prisma.paymentEligibilityRequest.upsert({
       where: { userId: session.user.id },
       update: {
+        accountName,
         bankAccountNo,
         bankCode,
         phoneNumber,
@@ -27,7 +31,13 @@ export async function POST(req: Request) {
         reviewedAt: null,
         submittedAt: new Date(),
       },
-      create: { userId: session.user.id, bankAccountNo, bankCode, phoneNumber },
+      create: {
+        userId: session.user.id,
+        accountName,
+        bankAccountNo,
+        bankCode,
+        phoneNumber,
+      },
     });
     return NextResponse.json(request);
   } catch (err) {

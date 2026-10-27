@@ -80,19 +80,6 @@ model User {
 
   verificationRequest       VerificationRequest?
   paymentEligibilityRequest PaymentEligibilityRequest?
-  passwordResetTokens      PasswordResetToken[]
-}
-
-model PasswordResetToken {
-  id        String   @id @default(cuid())
-  userId    String
-  tokenHash String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
 }
 
 enum PostMediaType {
@@ -254,6 +241,7 @@ model VerificationRequest {
 model PaymentEligibilityRequest {
   id            String        @id @default(cuid())
   userId        String        @unique
+  accountName   String? // the real name on the bank account, not the app username
   bankAccountNo String? // collected as part of the request itself
   bankCode      String?
   phoneNumber   String? // required by Flutterwave to create the payout subaccount

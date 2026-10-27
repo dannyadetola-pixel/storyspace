@@ -3,8 +3,13 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-export default function PaymentEligibilityForm() {
+export default function PaymentEligibilityForm({
+  banks,
+}: {
+  banks: { code: string; name: string }[];
+}) {
   const router = useRouter();
+  const [accountName, setAccountName] = useState("");
   const [bankAccountNo, setBankAccountNo] = useState("");
   const [bankCode, setBankCode] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -20,7 +25,7 @@ export default function PaymentEligibilityForm() {
     const res = await fetch("/api/payment-eligibility-requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bankAccountNo, bankCode, phoneNumber }),
+      body: JSON.stringify({ accountName, bankAccountNo, bankCode, phoneNumber }),
     });
 
     if (!res.ok) {
@@ -64,16 +69,16 @@ export default function PaymentEligibilityForm() {
 
         <div>
           <label
-            htmlFor="bankAccountNo"
+            htmlFor="accountName"
             className="block text-sm mb-1 text-app-text/70 dark:text-app-text-dark/70"
           >
-            Bank account number
+            Full name (as it appears on your bank account)
           </label>
           <input
-            id="bankAccountNo"
+            id="accountName"
             type="text"
-            value={bankAccountNo}
-            onChange={(e) => setBankAccountNo(e.target.value)}
+            value={accountName}
+            onChange={(e) => setAccountName(e.target.value)}
             required
             className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-app-text dark:text-app-text-dark focus:outline-none focus:ring-2 focus:ring-app-primary dark:focus:ring-app-primary-dark"
           />
@@ -84,13 +89,52 @@ export default function PaymentEligibilityForm() {
             htmlFor="bankCode"
             className="block text-sm mb-1 text-app-text/70 dark:text-app-text-dark/70"
           >
-            Bank code
+            Bank name
+          </label>
+          {banks.length > 0 ? (
+            <select
+              id="bankCode"
+              value={bankCode}
+              onChange={(e) => setBankCode(e.target.value)}
+              required
+              className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-app-text dark:text-app-text-dark focus:outline-none focus:ring-2 focus:ring-app-primary dark:focus:ring-app-primary-dark"
+            >
+              <option value="" disabled>
+                Select your bank
+              </option>
+              {banks.map((bank) => (
+                <option key={`${bank.code}-${bank.name}`} value={bank.code}>
+                  {bank.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            // Fallback if the bank list couldn't be loaded — a plain code
+            // input rather than blocking the form entirely.
+            <input
+              id="bankCode"
+              type="text"
+              value={bankCode}
+              onChange={(e) => setBankCode(e.target.value)}
+              placeholder="Bank code (bank list unavailable right now)"
+              required
+              className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-app-text dark:text-app-text-dark focus:outline-none focus:ring-2 focus:ring-app-primary dark:focus:ring-app-primary-dark"
+            />
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="bankAccountNo"
+            className="block text-sm mb-1 text-app-text/70 dark:text-app-text-dark/70"
+          >
+            Account number
           </label>
           <input
-            id="bankCode"
+            id="bankAccountNo"
             type="text"
-            value={bankCode}
-            onChange={(e) => setBankCode(e.target.value)}
+            value={bankAccountNo}
+            onChange={(e) => setBankAccountNo(e.target.value)}
             required
             className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-app-text dark:text-app-text-dark focus:outline-none focus:ring-2 focus:ring-app-primary dark:focus:ring-app-primary-dark"
           />
