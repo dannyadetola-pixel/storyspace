@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import LikeButton from "@/components/LikeButton";
 import CommentSection from "@/components/CommentSection";
 import ShareButton from "@/components/ShareButton";
+import UserLink from "@/components/UserLink";
 
 function toProxyUrl(mediaUrl: string): string {
   const marker = "/storage/v1/object/public/";
@@ -173,13 +174,11 @@ async function HomeFeed() {
                 )}
                 <div className="p-3 space-y-2">
                   <div className="text-sm text-app-text dark:text-app-text-dark">
-                    <span className="font-medium">{item.post.user.username}</span>
-                    {item.post.user.isVerified && (
-                      <span
-                        aria-hidden="true"
-                        className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                      />
-                    )}
+                    <UserLink
+                      username={item.post.user.username}
+                      isVerified={item.post.user.isVerified}
+                      className="font-medium text-app-text dark:text-app-text-dark"
+                    />
                     {item.post.caption && <> — {item.post.caption}</>}
                   </div>
                   <div className="flex items-start gap-5">
@@ -204,27 +203,28 @@ async function HomeFeed() {
                 </div>
               </div>
             ) : (
-              <Link
+              <div
                 key={`chapter-${item.chapter.id}`}
-                href={`/books/${item.chapter.book.id}/chapters/${item.chapter.id}`}
-                className="block bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 hover:opacity-90"
+                className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4"
               >
                 <p className="text-xs font-medium text-app-secondary dark:text-app-secondary-dark">
                   New chapter
                 </p>
                 <h2 className="font-medium text-app-text dark:text-app-text-dark">
-                  {item.chapter.book.title} — {item.chapter.title}
+                  <Link
+                    href={`/books/${item.chapter.book.id}/chapters/${item.chapter.id}`}
+                    className="hover:underline underline-offset-2"
+                  >
+                    {item.chapter.book.title} — {item.chapter.title}
+                  </Link>
                 </h2>
                 <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
-                  {item.chapter.book.user.username}
-                  {item.chapter.book.user.isVerified && (
-                    <span
-                      aria-hidden="true"
-                      className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                    />
-                  )}
+                  <UserLink
+                    username={item.chapter.book.user.username}
+                    isVerified={item.chapter.book.user.isVerified}
+                  />
                 </p>
-              </Link>
+              </div>
             )
           )}
         </div>

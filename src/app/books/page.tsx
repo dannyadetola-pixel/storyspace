@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import UserLink from "@/components/UserLink";
 
 // See feed/page.tsx for why this line matters — same static-caching gap.
 export const dynamic = "force-dynamic";
@@ -36,26 +37,27 @@ export default async function BooksPage() {
 
         <div className="space-y-3">
           {books.map((book) => (
-            <Link
+            <div
               key={book.id}
-              href={`/books/${book.id}`}
-              className="block bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 hover:opacity-90"
+              className="block bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4"
             >
               <h2 className="font-medium text-app-text dark:text-app-text-dark">
-                {book.title}
+                <Link
+                  href={`/books/${book.id}`}
+                  className="hover:underline underline-offset-2"
+                >
+                  {book.title}
+                </Link>
               </h2>
               <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
-                {book.user.username}
-                {book.user.isVerified && (
-                  <span
-                    aria-hidden="true"
-                    className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                  />
-                )}
+                <UserLink
+                  username={book.user.username}
+                  isVerified={book.user.isVerified}
+                />
                 {book.genre && ` · ${book.genre}`} · {book._count.chapters}{" "}
                 chapter{book._count.chapters === 1 ? "" : "s"}
               </p>
-            </Link>
+            </div>
           ))}
         </div>
       </div>
