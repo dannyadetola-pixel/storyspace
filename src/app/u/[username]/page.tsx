@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MessageButton from "@/components/MessageButton";
+import TipButton from "@/components/TipButton";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,8 @@ export default async function PublicProfilePage({
         <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
           {user.bio || "No bio yet"}
         </p>
+
+        {!isOwnProfile && <TipButton username={user.username} />}
 
         {user.books.length > 0 && (
           <div className="space-y-2">

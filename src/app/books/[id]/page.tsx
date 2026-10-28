@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import TipButton from "@/components/TipButton";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,11 @@ export default async function BookPage({
             <p className="mt-2 text-sm text-app-text/80 dark:text-app-text-dark/80">
               {book.description}
             </p>
+          )}
+          {!isAuthor && (
+            <div className="mt-3">
+              <TipButton username={book.user.username} />
+            </div>
           )}
         </div>
 

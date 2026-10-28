@@ -68,6 +68,8 @@ model User {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
+  tipsSent     Tip[] @relation("TipsSent")
+  tipsReceived Tip[] @relation("TipsReceived")
   passwordResetTokens PasswordResetToken[]
   accounts      Account[]
   sessions      Session[]
@@ -288,4 +290,25 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+model Tip {
+  id                       String    @id @default(cuid())
+  tipperId                 String
+  recipientId              String
+  amountKobo               Int
+  txRef                    String    @unique
+  status                   TipStatus @default(PENDING)
+  flutterwaveTransactionId String?
+  createdAt                DateTime  @default(now())
+
+  tipper    User @relation("TipsSent", fields: [tipperId], references: [id], onDelete: Cascade)
+  recipient User @relation("TipsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, status])
+}
+
+enum TipStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
 }
