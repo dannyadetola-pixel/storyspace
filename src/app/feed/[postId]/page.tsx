@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import LikeButton from "@/components/LikeButton";
 import CommentSection from "@/components/CommentSection";
 import ShareButton from "@/components/ShareButton";
+import UserLink from "@/components/UserLink";
 
 export const dynamic = "force-dynamic";
 
@@ -72,13 +73,11 @@ export default async function PostPage({
           )}
           <div className="p-3 space-y-2">
             <div className="text-sm text-app-text dark:text-app-text-dark">
-              <span className="font-medium">{post.user.username}</span>
-              {post.user.isVerified && (
-                <span
-                  aria-hidden="true"
-                  className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                />
-              )}
+              <UserLink
+                username={post.user.username}
+                isVerified={post.user.isVerified}
+                className="font-medium text-app-text dark:text-app-text-dark"
+              />
               {post.caption && <> — {post.caption}</>}
             </div>
             <div className="flex items-start gap-5">

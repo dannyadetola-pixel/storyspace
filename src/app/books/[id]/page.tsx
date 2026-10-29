@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import TipButton from "@/components/TipButton";
+import UserLink from "@/components/UserLink";
 
 export const dynamic = "force-dynamic";
 
@@ -34,13 +35,10 @@ export default async function BookPage({
             {book.title}
           </h1>
           <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
-            {book.user.username}
-            {book.user.isVerified && (
-              <span
-                aria-hidden="true"
-                className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-              />
-            )}
+            <UserLink
+              username={book.user.username}
+              isVerified={book.user.isVerified}
+            />
             {book.genre && ` · ${book.genre}`} ·{" "}
             {book.status === "ONGOING" ? "Ongoing" : "Complete"}
           </p>

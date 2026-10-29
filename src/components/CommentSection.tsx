@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import UserLink from "@/components/UserLink";
 
 type CommentData = {
   id: string;
@@ -97,15 +98,11 @@ export default function CommentSection({
           )}
           {comments?.map((c) => (
             <div key={c.id} className="text-sm">
-              <span className="font-medium text-app-text dark:text-app-text-dark">
-                {c.user.username}
-              </span>
-              {c.user.isVerified && (
-                <span
-                  aria-hidden="true"
-                  className="ml-1 inline-block w-2.5 h-2.5 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                />
-              )}
+              <UserLink
+                username={c.user.username}
+                isVerified={c.user.isVerified}
+                className="font-medium text-app-text dark:text-app-text-dark"
+              />
               <span className="text-app-text/80 dark:text-app-text-dark/80">
                 {" "}
                 {c.body}

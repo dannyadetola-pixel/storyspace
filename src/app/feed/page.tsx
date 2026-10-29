@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import LikeButton from "@/components/LikeButton";
 import CommentSection from "@/components/CommentSection";
 import ShareButton from "@/components/ShareButton";
+import UserLink from "@/components/UserLink";
 
 // Without this, Next.js can statically cache this page at build time —
 // meaning it would show whatever posts existed the moment Vercel built it,
@@ -29,12 +30,9 @@ export default async function FeedPage() {
     take: 30,
   });
 
-  // One extra query instead of one-per-post (which would be 30 queries for
-  // a full page) — fetch every reaction on these posts at once, then build
-  // lookup maps for "how many" and "did the current user already like it".
-  // Wrapped separately from the posts query above: if this one fails, the
-  // feed should still show posts (just without like counts) rather than
-  // the whole page going down over something non-essential.
+  // One extra query instead of one-per-post — fetch every reaction and
+  // comment on these posts at once. Wrapped so a failure degrades the
+  // action row, not the whole feed.
   const countByPost = new Map<string, number>();
   const likedByMe = new Set<string>();
   try {
@@ -107,13 +105,11 @@ export default async function FeedPage() {
               )}
               <div className="p-3 space-y-2">
                 <div className="text-sm text-app-text dark:text-app-text-dark">
-                  <span className="font-medium">{post.user.username}</span>
-                  {post.user.isVerified && (
-                    <span
-                      aria-hidden="true"
-                      className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                    />
-                  )}
+                  <UserLink
+                    username={post.user.username}
+                    isVerified={post.user.isVerified}
+                    className="font-medium text-app-text dark:text-app-text-dark"
+                  />
                   {post.caption && <> — {post.caption}</>}
                 </div>
                 <div className="flex items-start gap-5">
@@ -130,7 +126,10 @@ export default async function FeedPage() {
                     targetId={post.id}
                     initialCount={commentCountByPost.get(post.id) ?? 0}
                   />
-                  <ShareButton path={`/feed/${post.id}`} title={`${post.user.username} on StorySpace`} />
+                  <ShareButton
+                    path={`/feed/${post.id}`}
+                    title={`${post.user.username} on StorySpace`}
+                  />
                 </div>
               </div>
             </div>
