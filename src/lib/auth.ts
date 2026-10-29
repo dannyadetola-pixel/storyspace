@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { sendEmail, signInAlertEmail } from "@/lib/email";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -65,6 +66,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.username = token.username as string | undefined;
       }
       return session;
+    },
+  },
+  events: {
+    // Fires on every sign-in, including Google and password logins.
+    async signIn({ user }) {
+      if (!user.id || !user.email) return;
+      try {
+        const fresh = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { createdAt: true, username: true },
+        });
+        if (!fresh) return;
+
+        // Signing up signs the user in straight away, and the welcome email
+        // already covers that moment, so skip the sign-in alert for brand
+        // new accounts.
+        if (Date.now() - fresh.createdAt.getTime() < 60_000) return;
+
+        await sendEmail({
+          to: user.email,
+          ...signInAlertEmail(fresh.username, new Date()),
+        });
+      } catch (err) {
+        console.error("Sign-in email failed:", err);
+      }
     },
   },
 });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { sendEmail, welcomeEmail } from "@/lib/email";
 
 // Usernames appear in profile URLs (/u/<username>) and links across the app,
 // so they must be plain: letters, numbers, and underscores, 3–30 characters.
@@ -50,6 +51,13 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({
       data: { username, email, passwordHash },
     });
+
+    // A failed email must never fail the signup itself.
+    try {
+      await sendEmail({ to: user.email, ...welcomeEmail(user.username) });
+    } catch (err) {
+      console.error("Welcome email failed:", err);
+    }
 
     return NextResponse.json({ id: user.id, username: user.username });
   } catch (err) {
