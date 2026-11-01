@@ -10,6 +10,46 @@ import MonthlyChart from "@/components/MonthlyChart";
 
 export const dynamic = "force-dynamic";
 
+const CREATOR_LABELS: Record<string, string> = {
+  books: "Books and stories",
+  photos: "Photos and posts",
+  videos: "Videos and reels",
+  other: "Something else",
+};
+
+function Row({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="w-20 shrink-0 text-app-text/50 dark:text-app-text-dark/50">{label}</dt>
+      <dd className="min-w-0 break-all text-app-text dark:text-app-text-dark">
+        {value || "Not provided"}
+      </dd>
+    </div>
+  );
+}
+
+function LinkRow({ label, href }: { label: string; href: string | null | undefined }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="w-20 shrink-0 text-app-text/50 dark:text-app-text-dark/50">{label}</dt>
+      <dd className="min-w-0 break-all">
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+          >
+            {href}
+          </a>
+        ) : (
+          <span className="text-app-text/60 dark:text-app-text-dark/60">Not provided</span>
+        )}
+      </dd>
+    </div>
+  );
+}
+
 export default async function AdminPage() {
   const session = await auth();
   if (!isAdmin(session)) redirect("/");
@@ -24,7 +64,15 @@ export default async function AdminPage() {
   ] = await Promise.all([
     prisma.verificationRequest.findMany({
       where: { status: "PENDING" },
-      include: { user: { select: { username: true } } },
+      include: {
+        user: {
+          select: {
+            username: true,
+            createdAt: true,
+            _count: { select: { books: true, posts: true } },
+          },
+        },
+      },
       orderBy: { submittedAt: "asc" },
     }),
     prisma.paymentEligibilityRequest.findMany({
@@ -107,14 +155,29 @@ export default async function AdminPage() {
           {pendingVerification.map((request) => (
             <div
               key={request.id}
-              className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 space-y-2"
+              className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 space-y-3"
             >
-              <p className="text-sm font-medium text-app-text dark:text-app-text-dark">
-                {request.user.username}
-              </p>
-              {request.reason && (
-                <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">{request.reason}</p>
-              )}
+              <div>
+                <p className="text-sm font-medium text-app-text dark:text-app-text-dark">
+                  {request.user.username}
+                </p>
+                <p className="text-xs text-app-text/50 dark:text-app-text-dark/50">
+                  Joined {request.user.createdAt.toLocaleDateString("en-NG")} ·{" "}
+                  {request.user._count.books} books · {request.user._count.posts} posts
+                </p>
+              </div>
+
+              <dl className="text-sm space-y-1">
+                <Row label="Full name" value={request.fullName} />
+                <Row
+                  label="Creates"
+                  value={request.creatorType ? CREATOR_LABELS[request.creatorType] : null}
+                />
+                <LinkRow label="Profile" href={request.externalLink} />
+                <LinkRow label="Sample" href={request.sampleLink} />
+                <Row label="More info" value={request.reason} />
+              </dl>
+
               <AdminRequestActions kind="verification-requests" requestId={request.id} />
             </div>
           ))}

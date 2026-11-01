@@ -233,12 +233,16 @@ enum RequestStatus {
 }
 
 model VerificationRequest {
-  id          String        @id @default(cuid())
-  userId      String        @unique
-  reason      String?       @db.Text
-  status      RequestStatus @default(PENDING)
-  submittedAt DateTime      @default(now())
-  reviewedAt  DateTime?
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  fullName     String?
+  creatorType  String?
+  externalLink String?
+  sampleLink   String?
+  reason       String?       @db.Text // "Add more information" — optional free text
+  status       RequestStatus @default(PENDING)
+  submittedAt  DateTime      @default(now())
+  reviewedAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
