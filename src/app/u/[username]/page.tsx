@@ -7,6 +7,7 @@ import { getProfileStats } from "@/lib/profileStats";
 import MessageButton from "@/components/MessageButton";
 import TipButton from "@/components/TipButton";
 import FollowButton from "@/components/FollowButton";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -86,12 +87,7 @@ export default async function PublicProfilePage({
           <div className="min-w-0">
             <p className="font-medium text-app-text dark:text-app-text-dark truncate">
               {user.name || user.username}
-              {user.isVerified && (
-                <span
-                  aria-hidden="true"
-                  className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                />
-              )}
+              {user.isVerified && <VerifiedBadge />}
             </p>
             <p className="text-sm text-app-text/60 dark:text-app-text-dark/60 truncate">
               @{user.username}

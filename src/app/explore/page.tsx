@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -88,12 +89,7 @@ export default async function ExplorePage({
                 </p>
                 <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">
                   {book.user.username}
-                  {book.user.isVerified && (
-                    <span
-                      aria-hidden="true"
-                      className="ml-1 inline-block w-2.5 h-2.5 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                    />
-                  )}
+                  {book.user.isVerified && <VerifiedBadge />}
                 </p>
               </Link>
             ))}
@@ -113,12 +109,7 @@ export default async function ExplorePage({
               >
                 <p className="font-medium text-app-text dark:text-app-text-dark">
                   {u.username}
-                  {u.isVerified && (
-                    <span
-                      aria-hidden="true"
-                      className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                    />
-                  )}
+                  {u.isVerified && <VerifiedBadge />}
                 </p>
                 {u.bio && (
                   <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">
@@ -143,12 +134,7 @@ export default async function ExplorePage({
               >
                 <p className="text-sm text-app-text dark:text-app-text-dark">
                   <span className="font-medium">{post.user.username}</span>
-                  {post.user.isVerified && (
-                    <span
-                      aria-hidden="true"
-                      className="ml-1 inline-block w-2.5 h-2.5 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
-                    />
-                  )}
+                  {post.user.isVerified && <VerifiedBadge />}
                   {post.caption && <> — {post.caption}</>}
                 </p>
               </Link>

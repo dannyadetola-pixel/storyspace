@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import UserLink from "@/components/UserLink";
 
 type Message = {
   id: string;
@@ -67,6 +68,8 @@ export default function MessageList({
       )}
       {messages.map((message) => {
         const isMine = message.senderId === currentUserId;
+        const senderName = participantsById[message.senderId];
+
         return (
           <div
             key={message.id}
@@ -81,7 +84,14 @@ export default function MessageList({
             >
               {isGroup && !isMine && (
                 <p className="text-xs font-medium text-app-secondary dark:text-app-secondary-dark mb-0.5">
-                  {participantsById[message.senderId] ?? "Unknown"}
+                  {senderName ? (
+                    <UserLink
+                      username={senderName}
+                      className="text-app-secondary dark:text-app-secondary-dark"
+                    />
+                  ) : (
+                    "Unknown"
+                  )}
                 </p>
               )}
               {message.body}

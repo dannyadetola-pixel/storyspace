@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import UserLink from "@/components/UserLink";
 
 export const dynamic = "force-dynamic";
 
@@ -54,30 +55,39 @@ export default async function ChatsPage() {
             const other = conversation.participants.find(
               (p) => p.userId !== session.user.id
             );
-            const label = conversation.isGroup
-              ? conversation.name ?? "Group chat"
-              : other?.user.username ?? "Unknown user";
             const lastMessage = conversation.messages[0];
 
             return (
-              <Link
+              <div
                 key={conversation.id}
-                href={`/chats/${conversation.id}`}
-                className="block bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-xl p-3 hover:opacity-90"
+                className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-xl p-3 space-y-1"
               >
-                <div className="flex items-center text-sm font-medium text-app-text dark:text-app-text-dark">
-                  {label}
-                  {!conversation.isGroup && other?.user.isVerified && (
-                    <span
-                      aria-hidden="true"
-                      className="ml-1 inline-block w-3 h-3 rounded-full bg-app-verified dark:bg-app-verified-dark align-middle"
+                <div className="text-sm font-medium text-app-text dark:text-app-text-dark">
+                  {conversation.isGroup ? (
+                    <Link
+                      href={`/chats/${conversation.id}`}
+                      className="hover:underline underline-offset-2"
+                    >
+                      {conversation.name ?? "Group chat"}
+                    </Link>
+                  ) : other ? (
+                    <UserLink
+                      username={other.user.username}
+                      isVerified={other.user.isVerified}
                     />
+                  ) : (
+                    <span>Unknown user</span>
                   )}
                 </div>
-                <p className="text-sm text-app-text/60 dark:text-app-text-dark/60 truncate">
-                  {lastMessage ? lastMessage.body : "No messages yet"}
-                </p>
-              </Link>
+                <Link
+                  href={`/chats/${conversation.id}`}
+                  className="block text-sm text-app-text/60 dark:text-app-text-dark/60 truncate hover:opacity-80"
+                >
+                  {lastMessage
+                    ? lastMessage.body ?? "Sent a file"
+                    : "No messages yet"}
+                </Link>
+              </div>
             );
           })}
         </div>
