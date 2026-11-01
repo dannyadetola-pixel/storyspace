@@ -1,8 +1,12 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
+import { getMonthlyStats } from "@/lib/adminStats";
 import AdminRequestActions from "@/components/AdminRequestActions";
+import RevokeButton from "@/components/RevokeButton";
+import MonthlyChart from "@/components/MonthlyChart";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +14,14 @@ export default async function AdminPage() {
   const session = await auth();
   if (!isAdmin(session)) redirect("/");
 
-  const [verificationRequests, paymentRequests] = await Promise.all([
+  const [
+    pendingVerification,
+    pendingPayment,
+    approvedVerified,
+    approvedPayment,
+    monthly,
+    totalUsers,
+  ] = await Promise.all([
     prisma.verificationRequest.findMany({
       where: { status: "PENDING" },
       include: { user: { select: { username: true } } },
@@ -21,70 +32,167 @@ export default async function AdminPage() {
       include: { user: { select: { username: true } } },
       orderBy: { submittedAt: "asc" },
     }),
+    prisma.user.findMany({
+      where: { isVerified: true },
+      select: { id: true, username: true, name: true },
+      orderBy: { username: "asc" },
+    }),
+    prisma.user.findMany({
+      where: { isPaymentEligible: true },
+      select: { id: true, username: true, name: true, flutterwaveSubaccountId: true },
+      orderBy: { username: "asc" },
+    }),
+    getMonthlyStats(12),
+    prisma.user.count(),
   ]);
+
+  const monthlyUsers = monthly.map((m) => ({ label: m.label, value: m.users }));
+  const monthlyPosts = monthly.map((m) => ({ label: m.label, value: m.posts }));
+  const monthlyChapters = monthly.map((m) => ({ label: m.label, value: m.chapters }));
+  const monthlyTips = monthly.map((m) => ({ label: m.label, value: m.tipsNaira }));
 
   return (
     <main className="min-h-screen px-4 py-10">
-      <div className="max-w-md mx-auto space-y-8">
-        <h1 className="text-xl font-medium text-app-text dark:text-app-text-dark">
-          Admin
-        </h1>
+      <div className="max-w-md mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-medium text-app-text dark:text-app-text-dark">
+            Admin
+          </h1>
+          <Link
+            href="/"
+            className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+          >
+            Back to site
+          </Link>
+        </div>
 
+        {/* Overview */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-wide text-app-text/50 dark:text-app-text-dark/50">
+              Total users
+            </p>
+            <p className="mt-2 text-2xl font-medium text-app-text dark:text-app-text-dark">
+              {totalUsers.toLocaleString()}
+            </p>
+          </div>
+          <div className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-wide text-app-text/50 dark:text-app-text-dark/50">
+              Pending reviews
+            </p>
+            <p className="mt-2 text-2xl font-medium text-app-text dark:text-app-text-dark">
+              {(pendingVerification.length + pendingPayment.length).toLocaleString()}
+            </p>
+          </div>
+        </div>
+
+        {/* Monthly analytics */}
+        <MonthlyChart title="New users · last 12 months" data={monthlyUsers} />
+        <MonthlyChart title="Posts · last 12 months" data={monthlyPosts} />
+        <MonthlyChart title="Chapters · last 12 months" data={monthlyChapters} />
+        <MonthlyChart
+          title="Tips · last 12 months (₦)"
+          data={monthlyTips}
+          format={(n) => `₦${n.toLocaleString()}`}
+        />
+
+        {/* Pending verification */}
         <section className="space-y-3">
           <h2 className="text-sm font-medium uppercase tracking-wide text-app-text/50 dark:text-app-text-dark/50">
-            Verification requests
+            Pending verification
           </h2>
-          {verificationRequests.length === 0 && (
-            <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">
-              Nothing pending.
-            </p>
+          {pendingVerification.length === 0 && (
+            <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">Nothing pending.</p>
           )}
-          {verificationRequests.map((request) => (
+          {pendingVerification.map((request) => (
             <div
               key={request.id}
-              className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-xl p-3 space-y-2"
+              className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 space-y-2"
             >
               <p className="text-sm font-medium text-app-text dark:text-app-text-dark">
                 {request.user.username}
               </p>
               {request.reason && (
-                <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
-                  {request.reason}
-                </p>
+                <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">{request.reason}</p>
               )}
-              <AdminRequestActions
-                kind="verification-requests"
-                requestId={request.id}
-              />
+              <AdminRequestActions kind="verification-requests" requestId={request.id} />
             </div>
           ))}
         </section>
 
+        {/* Pending payment */}
         <section className="space-y-3">
           <h2 className="text-sm font-medium uppercase tracking-wide text-app-text/50 dark:text-app-text-dark/50">
-            Payment eligibility requests
+            Pending payment eligibility
           </h2>
-          {paymentRequests.length === 0 && (
-            <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">
-              Nothing pending.
-            </p>
+          {pendingPayment.length === 0 && (
+            <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">Nothing pending.</p>
           )}
-          {paymentRequests.map((request) => (
+          {pendingPayment.map((request) => (
             <div
               key={request.id}
-              className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-xl p-3 space-y-2"
+              className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 space-y-2"
             >
               <p className="text-sm font-medium text-app-text dark:text-app-text-dark">
                 {request.user.username}
               </p>
               <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
-                {request.accountName} · Acct: {request.bankAccountNo} · Bank
-                code: {request.bankCode} · {request.phoneNumber}
+                {request.accountName} · Acct: {request.bankAccountNo} · Bank code: {request.bankCode} · {request.phoneNumber}
               </p>
-              <AdminRequestActions
-                kind="payment-eligibility-requests"
-                requestId={request.id}
-              />
+              <AdminRequestActions kind="payment-eligibility-requests" requestId={request.id} />
+            </div>
+          ))}
+        </section>
+
+        {/* Approved verification */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-app-text/50 dark:text-app-text-dark/50">
+            Verified accounts ({approvedVerified.length})
+          </h2>
+          {approvedVerified.length === 0 && (
+            <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">No verified accounts yet.</p>
+          )}
+          {approvedVerified.map((u) => (
+            <div
+              key={u.id}
+              className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between"
+            >
+              <Link
+                href={`/u/${u.username}`}
+                className="text-sm font-medium text-app-text dark:text-app-text-dark underline underline-offset-2"
+              >
+                {u.name || u.username}
+              </Link>
+              <RevokeButton userId={u.id} kind="verification" />
+            </div>
+          ))}
+        </section>
+
+        {/* Approved payments */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-app-text/50 dark:text-app-text-dark/50">
+            Approved for payments ({approvedPayment.length})
+          </h2>
+          {approvedPayment.length === 0 && (
+            <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">No approved payment accounts yet.</p>
+          )}
+          {approvedPayment.map((u) => (
+            <div
+              key={u.id}
+              className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between"
+            >
+              <div>
+                <Link
+                  href={`/u/${u.username}`}
+                  className="text-sm font-medium text-app-text dark:text-app-text-dark underline underline-offset-2"
+                >
+                  {u.name || u.username}
+                </Link>
+                <p className="text-xs text-app-text/50 dark:text-app-text-dark/50">
+                  {u.flutterwaveSubaccountId ? "Subaccount active" : "No subaccount"}
+                </p>
+              </div>
+              <RevokeButton userId={u.id} kind="payment" />
             </div>
           ))}
         </section>

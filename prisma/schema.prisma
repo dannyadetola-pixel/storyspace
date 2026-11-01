@@ -67,6 +67,8 @@ model User {
   flutterwaveSubaccountId String? // set once their eligibility request is approved and a payout subaccount is created
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
+  followsMade     Follow[] @relation("FollowsMade")
+  followsReceived Follow[] @relation("FollowsReceived")
 
   tipsSent     Tip[] @relation("TipsSent")
   tipsReceived Tip[] @relation("TipsReceived")
@@ -311,4 +313,16 @@ enum TipStatus {
   PENDING
   SUCCESSFUL
   FAILED
+}
+model Follow {
+  id         String   @id @default(cuid())
+  followerId String
+  followedId String
+  createdAt  DateTime @default(now())
+
+  follower User @relation("FollowsMade", fields: [followerId], references: [id], onDelete: Cascade)
+  followed User @relation("FollowsReceived", fields: [followedId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followedId])
+  @@index([followedId])
 }
