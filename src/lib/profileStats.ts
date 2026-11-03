@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 
 // Counts for one user's profile. "Total likes" means reactions on their
 // posts and chapters. "Book engagements" means reactions and comments on
-// the chapters of their books.
+// the published chapters of their books.
 export async function getProfileStats(userId: string) {
   const [followers, following, books, posts, chapters] = await Promise.all([
     prisma.follow.count({ where: { followedId: userId } }),
@@ -10,7 +10,8 @@ export async function getProfileStats(userId: string) {
     prisma.book.count({ where: { userId } }),
     prisma.post.findMany({ where: { userId }, select: { id: true } }),
     prisma.chapter.findMany({
-      where: { book: { userId } },
+      // Drafts aren't public, so they don't count toward the totals.
+      where: { book: { userId }, isPublished: true },
       select: { id: true },
     }),
   ]);

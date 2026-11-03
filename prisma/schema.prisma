@@ -129,6 +129,8 @@ model Book {
   chapters Chapter[]
 
   @@index([userId])
+    isMature  Boolean  @default(false)
+  tags      String[] @default([])
 }
 
 model Chapter {
@@ -144,6 +146,7 @@ model Chapter {
   book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@unique([bookId, order])
+    isPublished Boolean @default(true)
 }
 
 // Reactions and Comments both target either a Post or a Chapter. Prisma

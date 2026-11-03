@@ -80,6 +80,8 @@ async function HomeFeed() {
       take: 15,
     }),
     prisma.chapter.findMany({
+      // Drafts never appear in the public feed.
+      where: { isPublished: true },
       orderBy: { publishedAt: "desc" },
       include: {
         book: {

@@ -17,7 +17,8 @@ export async function getMonthlyStats(months = 12) {
       select: { createdAt: true },
     }),
     prisma.chapter.findMany({
-      where: { publishedAt: { gte: since } },
+      // Drafts aren't published yet, so they don't count as output.
+      where: { publishedAt: { gte: since }, isPublished: true },
       select: { publishedAt: true },
     }),
     prisma.tip.findMany({
