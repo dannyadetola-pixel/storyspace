@@ -6,6 +6,7 @@ import { toProxyUrl } from "@/lib/media";
 import { getProfileStats } from "@/lib/profileStats";
 import ProfileEditor from "@/components/ProfileEditor";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import NotificationBell from "@/components/NotificationBell";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,14 @@ export default async function ProfilePage() {
   return (
     <main className="min-h-screen px-4 py-10">
       <div className="max-w-md mx-auto space-y-4">
+        {/* Top row */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-app-text/60 dark:text-app-text-dark/60">
+            Your profile
+          </p>
+          <NotificationBell />
+        </div>
+
         {/* Identity card */}
         <div className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-5 flex items-center gap-4">
           <div className="w-16 h-16 rounded-full overflow-hidden bg-app-primary dark:bg-app-primary-dark flex items-center justify-center text-white font-medium shrink-0">

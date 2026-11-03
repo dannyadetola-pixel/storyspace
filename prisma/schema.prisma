@@ -69,6 +69,7 @@ model User {
   updatedAt               DateTime  @updatedAt
   followsMade     Follow[] @relation("FollowsMade")
   followsReceived Follow[] @relation("FollowsReceived")
+  notifications Notification[]
 
   tipsSent     Tip[] @relation("TipsSent")
   tipsReceived Tip[] @relation("TipsReceived")
@@ -329,4 +330,27 @@ model Follow {
 
   @@unique([followerId, followedId])
   @@index([followedId])
+}
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  VERIFIED
+  VERIFICATION_REVOKED
+  PAYMENT_APPROVED
+  PAYMENT_REVOKED
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
 }

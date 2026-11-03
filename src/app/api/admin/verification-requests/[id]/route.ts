@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
+import { notify } from "@/lib/notify";
 
 export async function POST(
   req: Request,
@@ -31,6 +32,12 @@ export async function POST(
       await prisma.user.update({
         where: { id: request.userId },
         data: { isVerified: true },
+      });
+      await notify({
+        userId: request.userId,
+        type: "VERIFIED",
+        message: "Your account has been verified",
+        link: "/profile",
       });
     }
 

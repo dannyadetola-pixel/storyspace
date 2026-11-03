@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notify, getTargetOwner } from "@/lib/notify";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -35,6 +36,18 @@ export async function POST(req: Request) {
     await prisma.reaction.create({
       data: { userId: session.user.id, targetType, targetId, type: "LIKE" },
     });
+
+    const owner = await getTargetOwner(targetType, targetId);
+    if (owner) {
+      await notify({
+        userId: owner.ownerId,
+        actorId: session.user.id,
+        type: "LIKE",
+        message: `${session.user.username} liked your ${owner.noun}`,
+        link: owner.link,
+      });
+    }
+
     return NextResponse.json({ liked: true });
   } catch (err) {
     console.error("Reaction toggle failed:", err);

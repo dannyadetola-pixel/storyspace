@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notify } from "@/lib/notify";
 
 // Toggles following a user. Returns the new state.
 export async function POST(req: Request) {
@@ -38,5 +39,14 @@ export async function POST(req: Request) {
   await prisma.follow.create({
     data: { followerId: session.user.id, followedId: target.id },
   });
+
+  await notify({
+    userId: target.id,
+    actorId: session.user.id,
+    type: "FOLLOW",
+    message: `${session.user.username} started following you`,
+    link: `/u/${session.user.username}`,
+  });
+
   return NextResponse.json({ following: true });
 }

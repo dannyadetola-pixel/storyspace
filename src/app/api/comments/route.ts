@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notify, getTargetOwner } from "@/lib/notify";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -53,6 +54,18 @@ export async function POST(req: Request) {
       },
       include: { user: { select: { username: true, isVerified: true } } },
     });
+
+    const owner = await getTargetOwner(targetType, targetId);
+    if (owner) {
+      await notify({
+        userId: owner.ownerId,
+        actorId: session.user.id,
+        type: "COMMENT",
+        message: `${session.user.username} commented on your ${owner.noun}`,
+        link: owner.link,
+      });
+    }
+
     return NextResponse.json(comment);
   } catch (err) {
     console.error("Comment creation failed:", err);
