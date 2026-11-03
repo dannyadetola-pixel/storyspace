@@ -1,21 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { useEffect, useRef, useState } from "react";
 import UserLink from "@/components/UserLink";
 
 type Message = {
   id: string;
   body: string | null;
   senderId: string;
+  createdAt: string;
 };
 
-// Public-safe client — the anon key is designed to be exposed in the
-// browser, unlike the secret key used server-side for Storage/admin work.
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const POLL_MS = 3000;
 
 export default function MessageList({
   conversationId,
@@ -28,34 +23,68 @@ export default function MessageList({
   initialMessages: Message[];
   currentUserId: string;
   isGroup: boolean;
-  // Live messages arrive as raw rows with only a senderId — this maps IDs
-  // back to usernames so group messages can show who sent them.
+  // Maps sender IDs to usernames so group messages can show who sent them.
   participantsById: Record<string, string>;
 }) {
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+
+  // Fetch anything at or after this timestamp. Starts at the newest message
+  // already on the page, so nothing is loaded twice.
+  const cursorRef = useRef<string>(
+    initialMessages.length > 0
+      ? initialMessages[initialMessages.length - 1].createdAt
+      : new Date(0).toISOString()
+  );
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`conversation:${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "Message",
-          filter: `conversationId=eq.${conversationId}`,
-        },
-        (payload) => {
-          const incoming = payload.new as Message;
-          setMessages((prev) =>
-            prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]
-          );
-        }
-      )
-      .subscribe();
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let controller: AbortController | undefined;
 
+    async function poll() {
+      // Skip the request while the tab is hidden, but keep the timer going.
+      if (!active || document.hidden) {
+        schedule();
+        return;
+      }
+
+      controller = new AbortController();
+      try {
+        const res = await fetch(
+          `/api/conversations/${conversationId}/messages?after=${encodeURIComponent(
+            cursorRef.current
+          )}`,
+          { cache: "no-store", signal: controller.signal }
+        );
+        if (res.ok && active) {
+          const incoming: Message[] = await res.json();
+          if (incoming.length > 0) {
+            cursorRef.current = incoming[incoming.length - 1].createdAt;
+            setMessages((prev) => {
+              const seen = new Set(prev.map((m) => m.id));
+              const fresh = incoming.filter((m) => !seen.has(m.id));
+              return fresh.length > 0 ? [...prev, ...fresh] : prev;
+            });
+          }
+        }
+      } catch {
+        // Aborted on unmount, or a dropped request. Either way, the next tick tries again.
+      } finally {
+        schedule();
+      }
+    }
+
+    // The next poll is scheduled only after the current one has finished,
+    // so requests can never pile up behind each other.
+    function schedule() {
+      if (active) timer = setTimeout(poll, POLL_MS);
+    }
+
+    schedule();
     return () => {
-      supabase.removeChannel(channel);
+      active = false;
+      if (timer) clearTimeout(timer);
+      controller?.abort();
     };
   }, [conversationId]);
 

@@ -37,14 +37,21 @@ export default async function ConversationPage({
   const messages = await prisma.message.findMany({
     where: { conversationId: id },
     orderBy: { createdAt: "asc" },
-    select: { id: true, body: true, senderId: true },
+    select: { id: true, body: true, senderId: true, createdAt: true },
   });
+
+  // Dates can't be passed to the client component as-is, so send ISO strings.
+  const initialMessages = messages.map((m) => ({
+    id: m.id,
+    body: m.body,
+    senderId: m.senderId,
+    createdAt: m.createdAt.toISOString(),
+  }));
 
   const other = conversation.participants.find(
     (p) => p.userId !== session.user.id
   );
 
-  // Lets the message list show sender names in group chats.
   const participantsById = Object.fromEntries(
     conversation.participants.map((p) => [p.userId, p.user.username])
   );
@@ -75,8 +82,9 @@ export default async function ConversationPage({
         </div>
 
         <MessageList
+          key={conversation.id}
           conversationId={conversation.id}
-          initialMessages={messages}
+          initialMessages={initialMessages}
           currentUserId={session.user.id}
           isGroup={conversation.isGroup}
           participantsById={participantsById}
