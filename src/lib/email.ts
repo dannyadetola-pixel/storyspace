@@ -38,6 +38,7 @@ export async function sendEmail({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ from, to: [to], subject, html }),
+    signal: AbortSignal.timeout(5000),
   });
 
   if (!res.ok) {

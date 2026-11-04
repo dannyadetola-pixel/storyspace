@@ -6,6 +6,7 @@ import LikeButton from "@/components/LikeButton";
 import CommentSection from "@/components/CommentSection";
 import ShareButton from "@/components/ShareButton";
 import UserLink from "@/components/UserLink";
+import MarketingHero from "@/components/MarketingHero";
 
 function toProxyUrl(mediaUrl: string): string {
   const marker = "/storage/v1/object/public/";
@@ -67,9 +68,8 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const session = await auth();
-  return session?.user ? <HomeFeed /> : <MarketingHome />;
+    return session?.user ? <HomeFeed /> : <MarketingHero />;
 }
-
 async function HomeFeed() {
   const session = await auth();
 
