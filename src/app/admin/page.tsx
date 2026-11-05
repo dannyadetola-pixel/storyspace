@@ -106,12 +106,20 @@ export default async function AdminPage() {
           <h1 className="text-xl font-medium text-app-text dark:text-app-text-dark">
             Admin
           </h1>
-          <Link
-            href="/"
-            className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
-          >
-            Back to site
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/admin/editor-picks"
+              className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+            >
+              Editor picks
+            </Link>
+            <Link
+              href="/"
+              className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+            >
+              Back to site
+            </Link>
+          </div>
         </div>
 
         {/* Overview */}

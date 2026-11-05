@@ -1,0 +1,51 @@
+SCHEMA ADDITIONS
+================
+
+Do NOT replace prisma/schema.prisma. Paste these snippets into it, so your
+existing models (including PasswordResetToken) are kept.
+
+1. Add these two lines inside "model Book { ... }", next to the other relations:
+
+  views      BookView[]
+  editorPick EditorPick?
+
+2. Add this line inside "model User { ... }", next to the other relations:
+
+  bookViews BookView[]
+
+3. Add these models at the bottom of the file:
+
+model BookView {
+  id        String   @id @default(cuid())
+  bookId    String
+  userId    String
+  day       DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, userId, day])
+  @@index([bookId])
+}
+
+model EditorPick {
+  id        String   @id @default(cuid())
+  bookId    String   @unique
+  position  Int
+  createdAt DateTime @default(now())
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([position])
+}
+
+Then run, in order:
+
+  npx prisma validate
+  npx prisma generate
+  npm run prisma:migrate      (name the first one: add_book_views)
+  npm run prisma:migrate      (name the second one: add_editor_picks)
+
+If the book-details fields (isMature, tags on Book; isPublished on Chapter)
+are missing, add them first, as described in the books update.

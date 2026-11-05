@@ -70,6 +70,7 @@ model User {
   followsMade     Follow[] @relation("FollowsMade")
   followsReceived Follow[] @relation("FollowsReceived")
   notifications Notification[]
+    bookViews BookView[]
 
   tipsSent     Tip[] @relation("TipsSent")
   tipsReceived Tip[] @relation("TipsReceived")
@@ -125,6 +126,8 @@ model Book {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  editorPick EditorPick?
+  views BookView[]
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   chapters Chapter[]
 
@@ -356,4 +359,27 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read, createdAt])
+}
+model BookView {
+  id        String   @id @default(cuid())
+  bookId    String
+  userId    String
+  day       DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, userId, day])
+  @@index([bookId])
+}
+model EditorPick {
+  id        String   @id @default(cuid())
+  bookId    String   @unique
+  position  Int
+  createdAt DateTime @default(now())
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([position])
 }

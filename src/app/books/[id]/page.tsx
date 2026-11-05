@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { toProxyUrl } from "@/lib/media";
 import TipButton from "@/components/TipButton";
 import UserLink from "@/components/UserLink";
+import ViewTracker from "@/components/ViewTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,8 @@ export default async function BookPage({
 
   return (
     <main className="min-h-screen px-4 py-10">
+      <ViewTracker bookId={book.id} />
+
       <div className="max-w-2xl mx-auto space-y-4">
         {/* Book card */}
         <div className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-2xl p-5 flex gap-5">
