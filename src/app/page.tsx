@@ -64,8 +64,6 @@ async function HomeFeed() {
     }),
   ]);
 
-  // Banner order: one book, a house ad, two books, a house ad. The ads sit in
-  // the strip, never between the rows, so they never break a row.
   const bookSlide = (book: (typeof popular)[number]): FeaturedSlide => ({
     id: book.id,
     title: book.title,
@@ -84,12 +82,19 @@ async function HomeFeed() {
     sponsored: true,
   });
 
+  // Banner order (8 slides): a book, a house ad, three books, a house ad,
+  // two books. The ads sit in the strip, never between the rows.
+  const bannerBooks = popular.slice(0, 6).map(bookSlide);
   const bannerSlides: FeaturedSlide[] = [
-    ...popular.slice(0, 1).map(bookSlide),
+    bannerBooks[0],
     adSlide(houseAds[0]),
-    ...popular.slice(1, 3).map(bookSlide),
+    bannerBooks[1],
+    bannerBooks[2],
+    bannerBooks[3],
     adSlide(houseAds[1]),
-  ];
+    bannerBooks[4],
+    bannerBooks[5],
+  ].filter((slide): slide is FeaturedSlide => Boolean(slide));
 
   return (
     <main className="w-full space-y-12 px-4 py-8 sm:px-6 lg:px-10">
