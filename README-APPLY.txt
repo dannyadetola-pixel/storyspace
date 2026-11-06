@@ -1,63 +1,36 @@
-APPLYING THE DESIGN CHANGES
-===========================
+EXPLORE PAGE - APPLYING THE CHANGES
+===================================
 
-1. SCHEMA (manual - do this first)
-   Open prisma/SCHEMA-ADDITIONS.txt and paste the snippets into
-   prisma/schema.prisma. Do NOT replace the whole schema file.
+1. SCHEMA (manual)
+   Paste the two snippets from prisma/SCHEMA-ADDITIONS.txt into
+   prisma/schema.prisma. Do not replace the whole file.
    Then run:
 
      npx prisma validate
      npx prisma generate
-     npm run prisma:migrate     (name: add_book_views)
-     npm run prisma:migrate     (name: add_editor_picks)
+     npm run prisma:migrate      (name it: add_recent_searches)
 
 2. UNZIP
    From the project folder:
 
-     unzip -o storyspace-design-changes.zip
+     unzip -o explore-changes.zip
 
-   This adds new files and replaces the files listed below. Nothing else
-   is touched.
+   Files added or replaced:
+     src/app/explore/page.tsx                 (replaced)
+     src/app/api/search/recent/route.ts       (new)
+     src/components/SaveSearch.tsx            (new)
+     src/components/RecentSearches.tsx        (new)
+     src/components/ExploreGrid.tsx           (new)
 
-3. DELETE (not needed any more)
-   - src/components/AdSlot.tsx
-   - Any leftover src/components/NewBookForm.tsx or NewChapterForm.tsx
-     are harmless and can be deleted if you no longer use them.
+3. TEST
+   - Open /explore with no search. The mixed-size grid shows photos and
+     book covers alternating. Every seventh tile is a large block.
+   - Search for a word. Tabs appear: Top, Books, People, Posts.
+     The top results are ordered by popularity.
+   - Reload /explore. Your searches appear as Recent chips above the grid.
+   - Click "Clear all". The Recent list empties.
 
-4. PHOTOS (manual)
-   Save the eight hero photos into public/hero/ as 1.jpg through 8.jpg.
-
-5. TEST ON LOCALHOST
-   - Signed out: the landing page is fully dark, including the header.
-     The header has no theme toggle.
-   - Signed in as a reader: open a book, refresh, and the Popular row
-     shows one read (not two). Your own book does not count.
-   - Log in as the admin: open Admin, click "Editor picks", search a
-     book title, press Add. It appears in "Top picks by editors" on the
-     homepage.
-   - The banner shows book slides and two "Advertisement" slides. The
-     arrows move through all of them.
-
-6. PUSH
+4. PUSH
    git add .
-   git commit -m "Design changes: banner with house ads, editor picks, view tracking, dark landing"
+   git commit -m "Explore: recent searches, tabs, popularity ranking, mixed grid"
    git push
-
-FILES IN THIS PACKAGE
----------------------
-src/lib/ads.ts
-src/components/FeaturedBanner.tsx
-src/components/ViewTracker.tsx
-src/components/EditorPicksManager.tsx
-src/components/ShelfRow.tsx
-src/components/BookCard.tsx
-src/components/MarketingHero.tsx
-src/components/LoginPanel.tsx
-src/components/Header.tsx
-src/app/page.tsx
-src/app/books/[id]/page.tsx
-src/app/books/[id]/view/route.ts   (inside src/app/api/books/[id]/view/)
-src/app/api/admin/editor-picks/route.ts
-src/app/api/admin/books/route.ts
-src/app/admin/page.tsx
-src/app/admin/editor-picks/page.tsx

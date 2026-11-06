@@ -71,6 +71,7 @@ model User {
   followsReceived Follow[] @relation("FollowsReceived")
   notifications Notification[]
     bookViews BookView[]
+      recentSearches RecentSearch[]
 
   tipsSent     Tip[] @relation("TipsSent")
   tipsReceived Tip[] @relation("TipsReceived")
@@ -383,4 +384,15 @@ model EditorPick {
   book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@index([position])
+}
+model RecentSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  query     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, query])
+  @@index([userId, createdAt])
 }
