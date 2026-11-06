@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { toProxyUrl } from "@/lib/media";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 // Compact read count: 950, 2K, 1.2K, 3.4M. Trailing ".0" is dropped.
 function formatCount(n: number): string {
@@ -16,6 +17,7 @@ export default function BookCard({
   title,
   coverUrl,
   byline,
+  isVerified = false,
   meta,
   reads,
 }: {
@@ -23,6 +25,7 @@ export default function BookCard({
   title: string;
   coverUrl: string | null;
   byline: string;
+  isVerified?: boolean;
   meta: string;
   reads?: number;
 }) {
@@ -50,8 +53,9 @@ export default function BookCard({
       <p className="mt-2 line-clamp-2 text-sm font-medium text-app-text dark:text-app-text-dark">
         {title}
       </p>
-      <p className="truncate text-xs text-app-text/60 dark:text-app-text-dark/60">
-        {byline}
+      <p className="flex items-center truncate text-xs text-app-text/60 dark:text-app-text-dark/60">
+        <span className="truncate">{byline}</span>
+        {isVerified && <VerifiedBadge />}
       </p>
       <div className="mt-1.5 flex items-center gap-2">
         <span className="max-w-full truncate rounded-full bg-black/5 px-2.5 py-0.5 text-xs text-app-text/70 dark:bg-white/10 dark:text-app-text-dark/70">

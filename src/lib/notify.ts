@@ -7,7 +7,8 @@ export type NotificationKind =
   | "VERIFIED"
   | "VERIFICATION_REVOKED"
   | "PAYMENT_APPROVED"
-  | "PAYMENT_REVOKED";
+  | "PAYMENT_REVOKED"
+  | "MESSAGE";
 
 // Creates a notification for one user. A failure is logged but never
 // breaks the action that triggered it, and nobody is notified about

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notify } from "@/lib/notify";
 
 async function isParticipant(conversationId: string, userId: string) {
   const row = await prisma.conversationParticipant.findUnique({
@@ -75,6 +76,26 @@ export async function POST(
         body: body.trim(),
       },
     });
+
+    // Tell everyone else in the conversation. Each notification is created
+    // without blocking the message, and a failure never affects the sender.
+    const others = await prisma.conversationParticipant.findMany({
+      where: { conversationId, userId: { not: session.user.id } },
+      select: { userId: true },
+    });
+    const sender = session.user.username ?? "Someone";
+    await Promise.all(
+      others.map((p) =>
+        notify({
+          userId: p.userId,
+          actorId: session.user.id,
+          type: "MESSAGE",
+          message: `${sender} sent you a message`,
+          link: `/chats/${conversationId}`,
+        })
+      )
+    );
+
     return NextResponse.json(message);
   } catch (err) {
     console.error("Sending message failed:", err);

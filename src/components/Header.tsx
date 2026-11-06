@@ -4,6 +4,7 @@ import { isAdmin } from "@/lib/admin";
 import ThemeToggle from "./ThemeToggle";
 import MobileNav from "./MobileNav";
 import LogoutButton from "./LogoutButton";
+import NotificationBell from "./NotificationBell";
 
 export default async function Header() {
   const session = await auth();
@@ -28,9 +29,6 @@ export default async function Header() {
 
   const navLinks = (
     <>
-      <Link href="/feed" className={linkClass}>
-        Feed
-      </Link>
       <Link href="/books" className={linkClass}>
         Books
       </Link>
@@ -72,15 +70,21 @@ export default async function Header() {
           StorySpace
         </Link>
 
-        <nav
-          className={`hidden md:flex items-center gap-5 text-sm ${navTone}`}
-        >
-          {navLinks}
-        </nav>
+        <div className="flex items-center gap-2">
+          <nav
+            className={`hidden md:flex items-center gap-5 text-sm ${navTone}`}
+          >
+            {navLinks}
+          </nav>
 
-        <MobileNav>
-          <div className={mobileWrap}>{navLinks}</div>
-        </MobileNav>
+          <MobileNav>
+            <div className={mobileWrap}>{navLinks}</div>
+          </MobileNav>
+
+          {/* The bell comes last: after the theme toggle on desktop, and after
+              the menu button on mobile. It's rendered once, so it polls once. */}
+          {signedIn && <NotificationBell />}
+        </div>
       </div>
     </header>
   );

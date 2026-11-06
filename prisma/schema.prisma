@@ -345,6 +345,7 @@ enum NotificationType {
   VERIFICATION_REVOKED
   PAYMENT_APPROVED
   PAYMENT_REVOKED
+  MESSAGE
 }
 
 model Notification {

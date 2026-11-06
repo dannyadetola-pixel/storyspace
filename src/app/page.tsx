@@ -16,7 +16,7 @@ export default async function Home() {
 
 async function HomeFeed() {
   const bookSelect = {
-    user: { select: { username: true } },
+    user: { select: { username: true, isVerified: true } },
     _count: {
       select: {
         chapters: { where: { isPublished: true } },
@@ -51,7 +51,7 @@ async function HomeFeed() {
             id: true,
             title: true,
             coverUrl: true,
-            user: { select: { username: true } },
+            user: { select: { username: true, isVerified: true } },
           },
         },
       },
@@ -70,6 +70,7 @@ async function HomeFeed() {
     id: book.id,
     title: book.title,
     byline: book.user.username,
+    isVerified: book.user.isVerified,
     description: book.description,
     coverUrl: book.coverUrl,
   });
@@ -103,6 +104,7 @@ async function HomeFeed() {
               title={book.title}
               coverUrl={book.coverUrl}
               byline={book.user.username}
+              isVerified={book.user.isVerified}
               meta={book.genre ?? `${book._count.chapters} chapters`}
               reads={book._count.views}
             />
@@ -119,6 +121,7 @@ async function HomeFeed() {
               title={book.title}
               coverUrl={book.coverUrl}
               byline={book.user.username}
+              isVerified={book.user.isVerified}
               meta={book.genre ?? `${book._count.chapters} chapters`}
               reads={book._count.views}
             />
@@ -135,6 +138,7 @@ async function HomeFeed() {
               title={book.title}
               coverUrl={book.coverUrl}
               byline={book.user.username}
+              isVerified={book.user.isVerified}
               meta={book.genre ?? `${book._count.chapters} chapters`}
               reads={book._count.views}
             />
@@ -151,6 +155,7 @@ async function HomeFeed() {
               title={chapter.title}
               coverUrl={chapter.book.coverUrl}
               byline={chapter.book.user.username}
+              isVerified={chapter.book.user.isVerified}
               meta={chapter.book.title}
             />
           ))}
