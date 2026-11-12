@@ -187,7 +187,8 @@ model Comment {
 model Conversation {
   id        String   @id @default(cuid())
   isGroup   Boolean  @default(false)
-  name      String? // used for groups only
+  name      String?
+  avatarUrl String?
   createdAt DateTime @default(now())
 
   participants ConversationParticipant[]

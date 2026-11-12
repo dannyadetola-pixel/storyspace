@@ -1,36 +1,39 @@
-EXPLORE PAGE - APPLYING THE CHANGES
-===================================
+CHAT: GROUP PHOTOS, WHATSAPP-STYLE ROWS, DOODLE BACKGROUND
+==========================================================
 
 1. SCHEMA (manual)
-   Paste the two snippets from prisma/SCHEMA-ADDITIONS.txt into
-   prisma/schema.prisma. Do not replace the whole file.
-   Then run:
+   Follow prisma/SCHEMA-ADDITIONS.txt. Add one line to model Conversation,
+   then run:
 
      npx prisma validate
      npx prisma generate
-     npm run prisma:migrate      (name it: add_recent_searches)
+     npm run prisma:migrate      (name it: add_group_avatars)
 
 2. UNZIP
    From the project folder:
 
-     unzip -o explore-changes.zip
+     unzip -o chat-changes.zip
 
    Files added or replaced:
-     src/app/explore/page.tsx                 (replaced)
-     src/app/api/search/recent/route.ts       (new)
-     src/components/SaveSearch.tsx            (new)
-     src/components/RecentSearches.tsx        (new)
-     src/components/ExploreGrid.tsx           (new)
+     src/lib/chatTime.ts                                  (new)
+     src/components/Avatar.tsx                            (new)
+     src/components/ChatDoodles.tsx                       (new)
+     src/components/GroupAvatarUpload.tsx                 (new)
+     src/app/api/conversations/[id]/avatar/route.ts       (new)
+     src/app/chats/page.tsx                               (replaced)
+     src/app/chats/[id]/page.tsx                          (replaced)
 
 3. TEST
-   - Open /explore with no search. The mixed-size grid shows photos and
-     book covers alternating. Every seventh tile is a large block.
-   - Search for a word. Tabs appear: Top, Books, People, Posts.
-     The top results are ordered by popularity.
-   - Reload /explore. Your searches appear as Recent chips above the grid.
-   - Click "Clear all". The Recent list empties.
+   - Chat list: each row shows the avatar, name, last message with
+     "You:" or the sender's name, and the time. Rows are ordered by the
+     most recent message.
+   - A person with no photo shows a grey circle with a white silhouette.
+     A group with no photo shows the two-person silhouette.
+   - Open a group as an admin. "Change group photo" appears under the
+     group name. Upload an image; it replaces the silhouette.
+   - Open a one-to-one or group chat. The doodles sit behind the messages.
 
 4. PUSH
    git add .
-   git commit -m "Explore: recent searches, tabs, popularity ranking, mixed grid"
+   git commit -m "Chats: WhatsApp-style rows, group photos, default avatars, doodle background"
    git push

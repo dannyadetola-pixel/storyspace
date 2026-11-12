@@ -1,28 +1,13 @@
-SCHEMA ADDITIONS - RECENT SEARCHES
-==================================
+SCHEMA ADDITIONS - GROUP PHOTOS
+===============================
 
-Do NOT replace prisma/schema.prisma. Paste these into it.
+Do NOT replace prisma/schema.prisma. Find "model Conversation { ... }" and
+add this line next to "name String?":
 
-1. Inside "model User { ... }", next to the other relations, add:
-
-  recentSearches RecentSearch[]
-
-2. At the bottom of the file, add this model:
-
-model RecentSearch {
-  id        String   @id @default(cuid())
-  userId    String
-  query     String
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, query])
-  @@index([userId, createdAt])
-}
+  avatarUrl String?    // group photo; null shows the default group icon
 
 Then run:
 
   npx prisma validate
   npx prisma generate
-  npm run prisma:migrate      (name it: add_recent_searches)
+  npm run prisma:migrate      (name it: add_group_avatars)

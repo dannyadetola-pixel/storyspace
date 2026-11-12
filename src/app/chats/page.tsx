@@ -2,35 +2,46 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import UserLink from "@/components/UserLink";
+import { formatChatTime } from "@/lib/chatTime";
+import Avatar from "@/components/Avatar";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 export const dynamic = "force-dynamic";
 
 export default async function ChatsPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  const me = session?.user?.id;
+  if (!me) redirect("/login");
 
   const conversations = await prisma.conversation.findMany({
-    where: { participants: { some: { userId: session.user.id } } },
+    where: { participants: { some: { userId: me } } },
     include: {
       participants: {
-        include: { user: { select: { username: true, isVerified: true } } },
+        include: {
+          user: { select: { username: true, avatarUrl: true, isVerified: true } },
+        },
       },
-      messages: { orderBy: { createdAt: "desc" }, take: 1 },
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        include: { sender: { select: { username: true } } },
+      },
     },
   });
 
-  // Sorted here rather than in the query — Prisma can't directly order
-  // conversations by "their latest message's timestamp" in one call.
-  const sorted = conversations.sort((a, b) => {
-    const aTime = a.messages[0]?.createdAt ?? a.createdAt;
-    const bTime = b.messages[0]?.createdAt ?? b.createdAt;
-    return bTime.getTime() - aTime.getTime();
-  });
+  // Most recent activity first. A chat with no messages sorts by when it was made.
+  const rows = conversations
+    .map((c) => {
+      const last = c.messages[0] ?? null;
+      const other = c.participants.find((p) => p.userId !== me) ?? null;
+      const sortAt = (last?.createdAt ?? c.createdAt).getTime();
+      return { c, last, other, sortAt };
+    })
+    .sort((a, b) => b.sortAt - a.sortAt);
 
   return (
     <main className="min-h-screen px-4 py-10">
-      <div className="max-w-md mx-auto space-y-6">
+      <div className="mx-auto max-w-md space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-medium text-app-text dark:text-app-text-dark">
             Chats
@@ -43,54 +54,66 @@ export default async function ChatsPage() {
           </Link>
         </div>
 
-        {sorted.length === 0 && (
+        {rows.length === 0 && (
           <p className="text-sm text-app-text/70 dark:text-app-text-dark/70">
-            No conversations yet — message someone from their profile to
-            start one.
+            No conversations yet. Message someone from their profile to start one.
           </p>
         )}
 
-        <div className="space-y-2">
-          {sorted.map((conversation) => {
-            const other = conversation.participants.find(
-              (p) => p.userId !== session.user.id
-            );
-            const lastMessage = conversation.messages[0];
+        {rows.length > 0 && (
+          <div className="divide-y divide-black/5 overflow-hidden rounded-2xl border border-black/5 bg-app-surface dark:divide-white/10 dark:border-white/10 dark:bg-app-surface-dark">
+            {rows.map(({ c, last, other }) => {
+              const isGroup = c.isGroup;
+              const name = isGroup
+                ? c.name ?? "Group chat"
+                : other?.user.username ?? "Unknown user";
 
-            return (
-              <div
-                key={conversation.id}
-                className="bg-app-surface dark:bg-app-surface-dark border border-black/5 dark:border-white/10 rounded-xl p-3 space-y-1"
-              >
-                <div className="text-sm font-medium text-app-text dark:text-app-text-dark">
-                  {conversation.isGroup ? (
-                    <Link
-                      href={`/chats/${conversation.id}`}
-                      className="hover:underline underline-offset-2"
-                    >
-                      {conversation.name ?? "Group chat"}
-                    </Link>
-                  ) : other ? (
-                    <UserLink
-                      username={other.user.username}
-                      isVerified={other.user.isVerified}
-                    />
-                  ) : (
-                    <span>Unknown user</span>
-                  )}
-                </div>
+              // WhatsApp-style preview: "You:" for your own messages, the
+              // sender's name in groups, and plain text in one-to-one chats.
+              const prefix = !last
+                ? ""
+                : last.senderId === me
+                  ? "You: "
+                  : isGroup
+                    ? `${last.sender.username}: `
+                    : "";
+              const preview = last
+                ? `${prefix}${last.body ?? "Sent a file"}`
+                : "No messages yet";
+
+              return (
                 <Link
-                  href={`/chats/${conversation.id}`}
-                  className="block text-sm text-app-text/60 dark:text-app-text-dark/60 truncate hover:opacity-80"
+                  key={c.id}
+                  href={`/chats/${c.id}`}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
                 >
-                  {lastMessage
-                    ? lastMessage.body ?? "Sent a file"
-                    : "No messages yet"}
+                  <Avatar
+                    src={isGroup ? c.avatarUrl : other?.user.avatarUrl ?? null}
+                    kind={isGroup ? "group" : "user"}
+                    size={48}
+                  />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="flex min-w-0 items-center text-sm font-medium text-app-text dark:text-app-text-dark">
+                        <span className="truncate">{name}</span>
+                        {!isGroup && other?.user.isVerified && <VerifiedBadge />}
+                      </p>
+                      {last && (
+                        <time className="shrink-0 text-xs text-app-text/50 dark:text-app-text-dark/50">
+                          {formatChatTime(last.createdAt)}
+                        </time>
+                      )}
+                    </div>
+                    <p className="truncate text-sm text-app-text/60 dark:text-app-text-dark/60">
+                      {preview}
+                    </p>
+                  </div>
                 </Link>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </main>
   );
