@@ -10,7 +10,7 @@ export function platformFeeKobo(amountKobo: number): number {
   return Math.round(amountKobo * PLATFORM_COMMISSION);
 }
 
-// Creator's share in kobo.
+// Creator's share in kobo, before Paystack's fee.
 export function creatorShareKobo(amountKobo: number): number {
   return amountKobo - platformFeeKobo(amountKobo);
 }
@@ -106,8 +106,8 @@ export async function initializeTransaction(params: {
       subaccount: params.subaccountCode,
       // The platform's flat share of this payment. See PLATFORM_COMMISSION.
       transaction_charge: platformFeeKobo(params.amountKobo),
-      // Paystack's own fees come out of the platform's share.
-      bearer: "account",
+      // The creator's subaccount pays Paystack's fees.
+      bearer: "subaccount",
       metadata: params.metadata ?? {},
     },
   });
@@ -121,6 +121,7 @@ export type PaystackTransaction = {
   reference: string;
   amount: number; // kobo
   currency: string;
+  fees: number; // kobo, Paystack's fee on this payment
 };
 
 // Re-checks a payment directly with Paystack. Never trust the redirect alone.

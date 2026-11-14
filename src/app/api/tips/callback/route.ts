@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyTransaction } from "@/lib/paystack";
-import { markTipFailed, markTipSuccessful } from "@/lib/tipPayments";
+import { markTipSuccessful } from "@/lib/tipPayments";
 
 // Paystack sends the reader here after checkout, with the reference in the URL.
+// If the payment can't be confirmed, the tip stays PENDING, so the webhook can
+// still settle it later.
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const reference = url.searchParams.get("reference") ?? url.searchParams.get("trxref");
+  const reference =
+    url.searchParams.get("reference") ?? url.searchParams.get("trxref");
 
   const tip = reference
     ? await prisma.tip.findUnique({
@@ -20,25 +23,26 @@ export async function GET(req: Request) {
   }
 
   const back = (result: "paid=1" | "failed=1") =>
-    NextResponse.redirect(`${url.origin}/tip/${tip.recipient.username}?${result}`);
+    NextResponse.redirect(
+      `${url.origin}/tip/${tip.recipient.username}?${result}`
+    );
 
   if (tip.status === "SUCCESSFUL") return back("paid=1");
 
-  // The redirect is only a claim from the browser. Ask Paystack directly.
   const verified = await verifyTransaction(reference);
   const t = verified.data;
+
   const matches =
     verified.ok &&
     t !== null &&
     t.status === "success" &&
     t.currency === "NGN" &&
-    t.amount === tip.amountKobo;
+    Number(t.amount) === Number(tip.amountKobo);
 
   if (!matches || !t) {
-    await markTipFailed(reference);
     return back("failed=1");
   }
 
-  await markTipSuccessful(reference, String(t.id));
+  await markTipSuccessful(reference, String(t.id), Number(t.fees ?? 0));
   return back("paid=1");
 }

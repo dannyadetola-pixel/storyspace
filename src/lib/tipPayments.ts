@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { creatorShareKobo } from "@/lib/paystack";
 
-// Marks a tip successful and writes one earnings record for the creator.
-// Safe to call twice: the second call finds the tip already successful and
-// changes nothing, so a tip can never be recorded twice.
+// Marks a tip successful and writes one earnings record for the creator, after
+// Paystack's fee. Safe to call twice: the second call changes nothing.
 export async function markTipSuccessful(
   reference: string,
-  paystackTransactionId?: string
+  paystackTransactionId?: string,
+  feesKobo = 0
 ) {
   const tip = await prisma.tip.findUnique({
     where: { txRef: reference },
@@ -27,11 +27,14 @@ export async function markTipSuccessful(
     });
     if (claimed.count === 0) return;
 
+    // The creator's share, less the Paystack fee they now bear.
+    const netKobo = Math.max(0, creatorShareKobo(tip.amountKobo) - feesKobo);
+
     await tx.earning.create({
       data: {
         userId: tip.recipientId,
         source: "TIP",
-        amountKobo: creatorShareKobo(tip.amountKobo),
+        amountKobo: netKobo,
         status: "PENDING",
         reference,
       },

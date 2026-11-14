@@ -38,9 +38,10 @@ export async function POST(req: Request) {
       t !== null &&
       t.status === "success" &&
       t.currency === "NGN" &&
-      t.amount === tip.amountKobo
+      Number(t.amount) === Number(tip.amountKobo)
     ) {
-      await markTipSuccessful(reference, String(t.id));
+      // Paystack's fee is passed through, so the creator's earning is net of it.
+      await markTipSuccessful(reference, String(t.id), Number(t.fees ?? 0));
     }
   }
 
