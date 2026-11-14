@@ -64,7 +64,7 @@ model User {
   avatarUrl               String?
   isVerified              Boolean   @default(false) // the Instagram-style checkmark, reviewed by you
   isPaymentEligible       Boolean   @default(false) // reviewed by you before payouts can flow
-  flutterwaveSubaccountId String? // set once their eligibility request is approved and a payout subaccount is created
+   paystackSubaccountCode String?   // Paystack subaccount that settles this creator's tips
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   followsMade     Follow[] @relation("FollowsMade")
@@ -287,6 +287,7 @@ model Earning {
   source     EarningSource
   amountKobo Int // always store money as an integer in the smallest unit — never a float
   status     EarningStatus @default(PENDING)
+  reference String? @unique        // the tip reference; stops the same tip being recorded twice
   createdAt  DateTime      @default(now())
   paidAt     DateTime?
 
@@ -313,7 +314,8 @@ model Tip {
   amountKobo               Int
   txRef                    String    @unique
   status                   TipStatus @default(PENDING)
-  flutterwaveTransactionId String?
+   paystackTransactionId String?    // Paystack's transaction id, set on success
+  paidAt                DateTime? // when the payment was confirmed
   createdAt                DateTime  @default(now())
 
   tipper    User @relation("TipsSent", fields: [tipperId], references: [id], onDelete: Cascade)

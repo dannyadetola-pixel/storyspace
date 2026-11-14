@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import SignupForm from "./SignupForm";
+import MarketingHero from "@/components/MarketingHero";
 
 export default async function SignupPage() {
   const session = await auth();
   if (session?.user) redirect("/");
 
-  return <SignupForm />;
+  return <MarketingHero mode="signup" />;
 }

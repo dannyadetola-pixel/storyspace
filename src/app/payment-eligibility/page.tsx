@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getNigerianBanks } from "@/lib/flutterwave";
+import { getPaystackBanks } from "@/lib/paystack";
 import PaymentEligibilityForm from "./PaymentEligibilityForm";
 
 export const dynamic = "force-dynamic";
@@ -38,12 +38,10 @@ export default async function PaymentEligibilityPage() {
     );
   }
 
-  // If this fails (e.g. the Flutterwave key isn't set up correctly yet),
-  // the form still renders with an empty list rather than crashing the
-  // whole page — it just falls back to a plain text bank-code input.
+  // If the bank list can't load, the form still renders with a plain code input.
   let banks: { code: string; name: string }[] = [];
   try {
-    banks = await getNigerianBanks();
+    banks = await getPaystackBanks();
   } catch (err) {
     console.error("Failed to load bank list:", err);
   }

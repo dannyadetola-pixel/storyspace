@@ -1,13 +1,27 @@
-SCHEMA ADDITIONS - GROUP PHOTOS
-===============================
+SCHEMA ADDITIONS - PAYSTACK PAYOUTS AND WALLET
+==============================================
 
-Do NOT replace prisma/schema.prisma. Find "model Conversation { ... }" and
-add this line next to "name String?":
+Do NOT replace prisma/schema.prisma. Make these four additions.
 
-  avatarUrl String?    // group photo; null shows the default group icon
+1. Inside "model User { ... }", add this line next to flutterwaveSubaccountId:
+
+  paystackSubaccountCode String?   // Paystack subaccount that settles this creator's tips
+
+2. Inside "model Tip { ... }", add these two lines next to flutterwaveTransactionId:
+
+  paystackTransactionId String?    // Paystack's transaction id, set on success
+  paidAt                DateTime? // when the payment was confirmed
+
+3. Inside "model Earning { ... }", add this line next to status:
+
+  reference String? @unique        // the tip reference; stops the same tip being recorded twice
+
+4. Nothing else changes. No new models or relations.
 
 Then run:
 
   npx prisma validate
   npx prisma generate
-  npm run prisma:migrate      (name it: add_group_avatars)
+  npm run prisma:migrate      (name it: add_paystack_payouts)
+
+The Earning model already exists, so the earlier migrations don't need to be repeated.

@@ -87,7 +87,7 @@ export default async function AdminPage() {
     }),
     prisma.user.findMany({
       where: { isPaymentEligible: true },
-      select: { id: true, username: true, name: true, flutterwaveSubaccountId: true },
+      select: { id: true, username: true, name: true, paystackSubaccountCode: true },
       orderBy: { username: "asc" },
     }),
     getMonthlyStats(12),
@@ -260,7 +260,7 @@ export default async function AdminPage() {
                   {u.name || u.username}
                 </Link>
                 <p className="text-xs text-app-text/50 dark:text-app-text-dark/50">
-                  {u.flutterwaveSubaccountId ? "Subaccount active" : "No subaccount"}
+                  {u.paystackSubaccountCode ? "Subaccount active" : "No subaccount"}
                 </p>
               </div>
               <RevokeButton userId={u.id} kind="payment" />

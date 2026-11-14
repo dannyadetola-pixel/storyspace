@@ -2,7 +2,20 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
-import { createFlutterwaveSubaccount } from "@/lib/flutterwave";
+import { createSubaccount, resolveAccount } from "@/lib/paystack";
+import { notify } from "@/lib/notify";
+
+// Every word the applicant typed must appear in the name the bank returns.
+// This catches typos and mismatched accounts before a subaccount is created.
+function namesMatch(typed: string, resolved: string): boolean {
+  const words = (s: string) =>
+    s
+      .toLowerCase()
+      .split(/[^a-z]+/)
+      .filter((w) => w.length > 0);
+  const bankWords = new Set(words(resolved));
+  return words(typed).every((w) => bankWords.has(w));
+}
 
 export async function POST(
   req: Request,
@@ -21,7 +34,6 @@ export async function POST(
 
   const request = await prisma.paymentEligibilityRequest.findUnique({
     where: { id },
-    include: { user: { select: { email: true } } },
   });
   if (!request) {
     return NextResponse.json({ error: "Request not found" }, { status: 404 });
@@ -35,16 +47,7 @@ export async function POST(
     return NextResponse.json({ ok: true });
   }
 
-  // Approving: create the real payout destination FIRST. If Flutterwave
-  // rejects this (bad bank details, etc.), the request simply stays
-  // pending with a clear error — never flagged "approved" without an
-  // actual account behind it to receive money.
-  if (
-    !request.accountName ||
-    !request.bankAccountNo ||
-    !request.bankCode ||
-    !request.phoneNumber
-  ) {
+  if (!request.accountName || !request.bankAccountNo || !request.bankCode) {
     return NextResponse.json(
       { error: "Request is missing required details" },
       { status: 400 }
@@ -52,17 +55,27 @@ export async function POST(
   }
 
   try {
-    const { subaccountId } = await createFlutterwaveSubaccount({
-      accountBank: request.bankCode,
-      accountNumber: request.bankAccountNo,
+    // Confirm the account exists and belongs to the applicant before creating
+    // anything on Paystack.
+    const bankName = await resolveAccount(request.bankAccountNo, request.bankCode);
+    if (!namesMatch(request.accountName, bankName)) {
+      return NextResponse.json(
+        {
+          error: `The bank returned "${bankName}", which doesn't match "${request.accountName}". Check with the applicant before approving.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const subaccountCode = await createSubaccount({
       businessName: request.accountName,
-      businessMobile: request.phoneNumber,
-      businessEmail: request.user.email,
+      bankCode: request.bankCode,
+      accountNumber: request.bankAccountNo,
     });
 
     await prisma.user.update({
       where: { id: request.userId },
-      data: { isPaymentEligible: true, flutterwaveSubaccountId: subaccountId },
+      data: { isPaymentEligible: true, paystackSubaccountCode: subaccountCode },
     });
 
     await prisma.paymentEligibilityRequest.update({
@@ -70,16 +83,18 @@ export async function POST(
       data: { status: "APPROVED", reviewedAt: new Date() },
     });
 
-    return NextResponse.json({ ok: true, subaccountId });
+    await notify({
+      userId: request.userId,
+      type: "PAYMENT_APPROVED",
+      message: "You're approved to receive payments",
+      link: "/wallet",
+    });
+
+    return NextResponse.json({ ok: true, subaccountCode });
   } catch (err) {
-    console.error("Approving payment eligibility (Flutterwave) failed:", err);
+    console.error("Approving payment eligibility (Paystack) failed:", err);
     return NextResponse.json(
-      {
-        error:
-          err instanceof Error
-            ? err.message
-            : "Flutterwave rejected the subaccount request",
-      },
+      { error: err instanceof Error ? err.message : "Paystack rejected the request" },
       { status: 500 }
     );
   }

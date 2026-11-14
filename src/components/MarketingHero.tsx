@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import LoginPanel from "@/components/LoginPanel";
+import SignupPanel from "@/components/SignupPanel";
 
 // Instagram-style signed-out page, fixed dark in both panels. The brand panel
 // on the left has doodles behind the content. The login panel on the right
@@ -132,7 +133,11 @@ function BrandDoodles() {
   );
 }
 
-export default function MarketingHero() {
+export default function MarketingHero({
+  mode = "login",
+}: {
+  mode?: "login" | "signup";
+}) {
   return (
     <section className="grid min-h-[calc(100vh-3.5rem)] md:grid-cols-2">
       {/* Brand panel */}
@@ -193,7 +198,7 @@ export default function MarketingHero() {
       {/* Login panel: fixed dark, matching the brand panel */}
       <div className="flex flex-col items-center justify-center bg-[#181818] px-6 py-12 text-white">
         <div className="w-full max-w-sm">
-          <LoginPanel />
+                    {mode === "signup" ? <SignupPanel /> : <LoginPanel />}
         </div>
 
         <p className="mt-10 space-x-3 text-center text-xs text-white/50">

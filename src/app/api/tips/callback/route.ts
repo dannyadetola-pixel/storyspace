@@ -1,76 +1,44 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { verifyTransaction } from "@/lib/paystack";
+import { markTipFailed, markTipSuccessful } from "@/lib/tipPayments";
 
+// Paystack sends the reader here after checkout, with the reference in the URL.
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const { origin, searchParams } = url;
-  const txRef = searchParams.get("tx_ref");
-  const transactionId = searchParams.get("transaction_id");
-  const redirectStatus = searchParams.get("status");
+  const reference = url.searchParams.get("reference") ?? url.searchParams.get("trxref");
 
-  const tip = txRef
+  const tip = reference
     ? await prisma.tip.findUnique({
-        where: { txRef },
+        where: { txRef: reference },
         include: { recipient: { select: { username: true } } },
       })
     : null;
 
-  if (!tip) {
-    return NextResponse.redirect(`${origin}/`);
+  if (!tip || !reference) {
+    return NextResponse.redirect(`${url.origin}/`);
   }
 
   const back = (result: "paid=1" | "failed=1") =>
-    NextResponse.redirect(`${origin}/tip/${tip.recipient.username}?${result}`);
+    NextResponse.redirect(`${url.origin}/tip/${tip.recipient.username}?${result}`);
 
-  // Already confirmed earlier (e.g. the page was refreshed) — never credit twice.
-  if (tip.status === "SUCCESSFUL") {
-    return back("paid=1");
-  }
+  if (tip.status === "SUCCESSFUL") return back("paid=1");
 
-  const markFailed = () =>
-    prisma.tip.updateMany({
-      where: { id: tip.id, status: "PENDING" },
-      data: { status: "FAILED" },
-    });
-
-  if (redirectStatus !== "successful" || !transactionId) {
-    await markFailed();
-    return back("failed=1");
-  }
-
-  // The redirect's status is just a claim from the browser. Confirm with
-  // Flutterwave directly, using our secret key, before trusting it.
-  const verifyRes = await fetch(
-    `https://api.flutterwave.com/v3/transactions/${transactionId}/verify`,
-    {
-      headers: { Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}` },
-    }
-  );
-  const verify = await verifyRes.json();
-  console.log("[flutterwave] verify response:", verifyRes.status, JSON.stringify(verify));
-
-  const t = verify?.data;
+  // The redirect is only a claim from the browser. Ask Paystack directly.
+  const verified = await verifyTransaction(reference);
+  const t = verified.data;
   const matches =
-    verify?.status === "success" &&
-    t?.status === "successful" &&
-    t?.tx_ref === tip.txRef &&
-    t?.currency === "NGN" &&
-    Number(t?.amount) === tip.amountKobo / 100;
+    verified.ok &&
+    t !== null &&
+    t.status === "success" &&
+    t.currency === "NGN" &&
+    t.amount === tip.amountKobo;
 
-  if (!matches) {
-    await markFailed();
+  if (!matches || !t) {
+    await markTipFailed(reference);
     return back("failed=1");
   }
 
-  // updateMany with the PENDING condition means two overlapping callbacks
-  // can't both flip it — only the first one wins.
-  await prisma.tip.updateMany({
-    where: { id: tip.id, status: "PENDING" },
-    data: {
-      status: "SUCCESSFUL",
-      flutterwaveTransactionId: String(transactionId),
-    },
-  });
-
+  await markTipSuccessful(reference, String(t.id));
   return back("paid=1");
 }

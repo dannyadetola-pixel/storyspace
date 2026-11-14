@@ -22,13 +22,13 @@ export default async function TipPage({
     select: {
       username: true,
       isPaymentEligible: true,
-      flutterwaveSubaccountId: true,
+      paystackSubaccountCode: true,
     },
   });
   if (!recipient) notFound();
 
   const canReceive =
-    recipient.isPaymentEligible && !!recipient.flutterwaveSubaccountId;
+    recipient.isPaymentEligible && !!recipient.paystackSubaccountCode;
 
   return (
     <main className="min-h-screen px-4 py-10">
@@ -51,8 +51,7 @@ export default async function TipPage({
         )}
         {failed && (
           <p className="text-sm text-red-600">
-            The payment didn&rsquo;t complete. Nothing was charged to your
-            tip.
+            The payment didn&rsquo;t complete. Nothing was charged to your tip.
           </p>
         )}
 

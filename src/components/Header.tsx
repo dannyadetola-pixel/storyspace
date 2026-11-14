@@ -20,12 +20,12 @@ export default async function Header() {
     : "text-white/70";
   const headerClass = signedIn
     ? "relative border-b border-black/5 dark:border-white/10"
-    : "relative border-b border-white/10 bg-[#0d1a14] text-white";
+    : "relative border-b border-white/10 bg-[#000000] text-white";
   // The mobile dropdown has its own padding, so the dark version extends the
   // background into it with negative margins.
   const mobileWrap = signedIn
     ? "flex flex-col gap-4 text-app-text/70 dark:text-app-text-dark/70"
-    : "-mx-4 -my-4 flex flex-col gap-4 bg-[#0d1a14] px-4 py-4 text-white/70";
+    : "-mx-4 -my-4 flex flex-col gap-4 bg-[#000000] px-4 py-4 text-white/70";
 
   const navLinks = (
     <>
@@ -39,6 +39,9 @@ export default async function Header() {
         <>
           <Link href="/chats" className={linkClass}>
             Chats
+          </Link>
+          <Link href="/wallet" className={linkClass}>
+            Wallet
           </Link>
           <Link href="/profile" className={linkClass}>
             Profile
