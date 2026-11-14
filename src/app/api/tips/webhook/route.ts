@@ -6,11 +6,12 @@ import { markTipSuccessful } from "@/lib/tipPayments";
 // Paystack posts here after every payment, whether or not the reader came back
 // to the site. This is what records tips when someone closes the checkout tab.
 export async function POST(req: Request) {
-  // Read the raw text, because the signature is computed over the exact bytes.
   const raw = await req.text();
   const signature = req.headers.get("x-paystack-signature") ?? "";
+  console.log("[tips/webhook] received | bytes:", raw.length, "| signature present:", signature !== "");
 
   if (!webhookSignatureValid(raw, signature)) {
+    console.log("[tips/webhook] REJECTED: signature did not match");
     return new NextResponse("Invalid signature", { status: 401 });
   }
 
@@ -18,19 +19,28 @@ export async function POST(req: Request) {
   try {
     event = JSON.parse(raw);
   } catch {
+    console.log("[tips/webhook] REJECTED: body was not JSON");
     return new NextResponse("Bad payload", { status: 400 });
   }
+  console.log("[tips/webhook] event:", event.event, "| reference:", event.data?.reference);
 
   if (event.event === "charge.success" && event.data?.reference) {
     const reference = event.data.reference;
 
-    // Confirm the payment with Paystack before trusting the webhook.
     const verified = await verifyTransaction(reference);
     const t = verified.data;
     const tip = await prisma.tip.findUnique({
       where: { txRef: reference },
-      select: { amountKobo: true },
+      select: { amountKobo: true, status: true },
     });
+
+    console.log(
+      "[tips/webhook] verify | http ok:", verified.ok,
+      "| status:", t?.status,
+      "| amount:", t?.amount,
+      "| tip found:", !!tip,
+      "| tip status:", tip?.status
+    );
 
     if (
       tip &&
@@ -40,12 +50,10 @@ export async function POST(req: Request) {
       t.currency === "NGN" &&
       Number(t.amount) === Number(tip.amountKobo)
     ) {
-      // Paystack's fee is passed through, so the creator's earning is net of it.
       await markTipSuccessful(reference, String(t.id), Number(t.fees ?? 0));
+      console.log("[tips/webhook] recorded tip and earning:", reference);
     }
   }
 
-  // Always answer 200 once the signature is valid, so Paystack doesn't retry
-  // events we've already handled.
   return new NextResponse(null, { status: 200 });
 }

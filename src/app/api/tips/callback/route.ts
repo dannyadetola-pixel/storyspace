@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { verifyTransaction } from "@/lib/paystack";
 import { markTipSuccessful } from "@/lib/tipPayments";
 
-// Paystack sends the reader here after checkout, with the reference in the URL.
-// If the payment can't be confirmed, the tip stays PENDING, so the webhook can
-// still settle it later.
+// Paystack sends the reader here after checkout. If the payment can't be
+// confirmed, the tip stays PENDING, so the webhook can still settle it.
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const reference =
     url.searchParams.get("reference") ?? url.searchParams.get("trxref");
+
+  console.log("[tips/callback] hit | reference:", reference, "| query:", url.search);
 
   const tip = reference
     ? await prisma.tip.findUnique({
@@ -19,6 +20,7 @@ export async function GET(req: Request) {
     : null;
 
   if (!tip || !reference) {
+    console.log("[tips/callback] no tip found for reference:", reference);
     return NextResponse.redirect(`${url.origin}/`);
   }
 
@@ -27,10 +29,22 @@ export async function GET(req: Request) {
       `${url.origin}/tip/${tip.recipient.username}?${result}`
     );
 
-  if (tip.status === "SUCCESSFUL") return back("paid=1");
+  if (tip.status === "SUCCESSFUL") {
+    console.log("[tips/callback] already successful:", reference);
+    return back("paid=1");
+  }
 
   const verified = await verifyTransaction(reference);
   const t = verified.data;
+  console.log(
+    "[tips/callback] verify | http ok:", verified.ok,
+    "| message:", verified.message,
+    "| status:", t?.status,
+    "| currency:", t?.currency,
+    "| amount:", t?.amount,
+    "| expected:", tip.amountKobo,
+    "| fees:", t?.fees
+  );
 
   const matches =
     verified.ok &&
@@ -40,9 +54,11 @@ export async function GET(req: Request) {
     Number(t.amount) === Number(tip.amountKobo);
 
   if (!matches || !t) {
+    console.log("[tips/callback] not confirmed; tip left PENDING for the webhook");
     return back("failed=1");
   }
 
   await markTipSuccessful(reference, String(t.id), Number(t.fees ?? 0));
+  console.log("[tips/callback] recorded tip and earning:", reference);
   return back("paid=1");
 }
