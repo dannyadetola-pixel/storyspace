@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Lora } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import PwaRegister from "@/components/PwaRegister";
 
 // Self-hosted at build time by Next.js — no separate font-loading setup needed.
 const lora = Lora({
@@ -10,8 +11,23 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  // Placeholder — swap for the app's real name once you've picked one.
   title: "StorySpace",
+  description: "Books, community, and creators in one place.",
+  // The manifest is generated from src/app/manifest.ts.
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "StorySpace",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+// Next.js takes the theme colour from this export, not from metadata.
+export const viewport: Viewport = {
+  themeColor: "#1b7d00",
 };
 
 export default function RootLayout({
@@ -24,6 +40,7 @@ export default function RootLayout({
       <body className="bg-app-bg dark:bg-app-bg-dark min-h-screen">
         <Header />
         {children}
+        <PwaRegister />
       </body>
     </html>
   );
