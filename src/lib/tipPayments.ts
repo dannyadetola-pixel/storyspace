@@ -1,12 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { creatorShareKobo } from "@/lib/paystack";
 
-// Marks a tip successful and writes one earnings record for the creator, after
-// Paystack's fee. Safe to call twice: the second call changes nothing.
+// Marks a tip successful and writes one earnings record for the creator.
+// Safe to call twice: the second call changes nothing.
+//   feesKobo:   Paystack's fee on the payment.
+//   chargedKobo: the amount the reader actually paid. If it's more than the
+//                tip, the reader paid the fee, so the creator bears none.
 export async function markTipSuccessful(
   reference: string,
   paystackTransactionId?: string,
-  feesKobo = 0
+  feesKobo = 0,
+  chargedKobo?: number
 ) {
   const tip = await prisma.tip.findUnique({
     where: { txRef: reference },
@@ -27,8 +31,13 @@ export async function markTipSuccessful(
     });
     if (claimed.count === 0) return;
 
-    // The creator's share, less the Paystack fee they now bear.
-    const netKobo = Math.max(0, creatorShareKobo(tip.amountKobo) - feesKobo);
+    const readerPaidFee =
+      chargedKobo !== undefined && chargedKobo > tip.amountKobo;
+    const feeBorneByCreator = readerPaidFee ? 0 : feesKobo;
+    const netKobo = Math.max(
+      0,
+      creatorShareKobo(tip.amountKobo) - feeBorneByCreator
+    );
 
     await tx.earning.create({
       data: {

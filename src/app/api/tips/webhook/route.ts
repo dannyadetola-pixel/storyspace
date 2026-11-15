@@ -8,21 +8,19 @@ import { markTipSuccessful } from "@/lib/tipPayments";
 export async function POST(req: Request) {
   const raw = await req.text();
   const signature = req.headers.get("x-paystack-signature") ?? "";
-  console.log("[tips/webhook] received | bytes:", raw.length, "| signature present:", signature !== "");
+  console.log("[tips/webhook] received | bytes:", raw.length);
 
   if (!webhookSignatureValid(raw, signature)) {
     console.log("[tips/webhook] REJECTED: signature did not match");
     return new NextResponse("Invalid signature", { status: 401 });
   }
 
-  let event: { event?: string; data?: { reference?: string; status?: string } };
+  let event: { event?: string; data?: { reference?: string } };
   try {
     event = JSON.parse(raw);
   } catch {
-    console.log("[tips/webhook] REJECTED: body was not JSON");
     return new NextResponse("Bad payload", { status: 400 });
   }
-  console.log("[tips/webhook] event:", event.event, "| reference:", event.data?.reference);
 
   if (event.event === "charge.success" && event.data?.reference) {
     const reference = event.data.reference;
@@ -37,20 +35,27 @@ export async function POST(req: Request) {
     console.log(
       "[tips/webhook] verify | http ok:", verified.ok,
       "| status:", t?.status,
-      "| amount:", t?.amount,
-      "| tip found:", !!tip,
+      "| charged:", t?.amount,
+      "| tip amount:", tip?.amountKobo,
       "| tip status:", tip?.status
     );
 
+    // Paystack may add its fee to the reader's charge, so the amount paid can be
+    // more than the tip. Less than the tip is never accepted.
     if (
       tip &&
       verified.ok &&
       t !== null &&
       t.status === "success" &&
       t.currency === "NGN" &&
-      Number(t.amount) === Number(tip.amountKobo)
+      Number(t.amount) >= Number(tip.amountKobo)
     ) {
-      await markTipSuccessful(reference, String(t.id), Number(t.fees ?? 0));
+      await markTipSuccessful(
+        reference,
+        String(t.id),
+        Number(t.fees ?? 0),
+        Number(t.amount)
+      );
       console.log("[tips/webhook] recorded tip and earning:", reference);
     }
   }
