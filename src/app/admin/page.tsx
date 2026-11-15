@@ -108,6 +108,12 @@ export default async function AdminPage() {
           </h1>
           <div className="flex items-center gap-4">
             <Link
+              href="/admin/tips"
+              className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
+            >
+              Tips
+            </Link>
+            <Link
               href="/admin/editor-picks"
               className="text-sm text-app-primary dark:text-app-primary-dark underline underline-offset-2"
             >
