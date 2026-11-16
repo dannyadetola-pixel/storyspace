@@ -1,27 +1,38 @@
-SCHEMA ADDITIONS - PAYSTACK PAYOUTS AND WALLET
-==============================================
+SCHEMA ADDITIONS - CHAPTER UNLOCKS
+==================================
 
-Do NOT replace prisma/schema.prisma. Make these four additions.
+Do NOT replace prisma/schema.prisma. Make these three additions.
 
-1. Inside "model User { ... }", add this line next to flutterwaveSubaccountId:
+1. Inside "model User { ... }", add this line next to the other relations:
 
-  paystackSubaccountCode String?   // Paystack subaccount that settles this creator's tips
+  chapterUnlocks ChapterUnlock[]
 
-2. Inside "model Tip { ... }", add these two lines next to flutterwaveTransactionId:
+2. Inside "model Chapter { ... }", add this line next to the other relations:
 
-  paystackTransactionId String?    // Paystack's transaction id, set on success
-  paidAt                DateTime? // when the payment was confirmed
+  unlocks ChapterUnlock[]
 
-3. Inside "model Earning { ... }", add this line next to status:
+3. At the bottom of the file, add this model:
 
-  reference String? @unique        // the tip reference; stops the same tip being recorded twice
+model ChapterUnlock {
+  id                    String    @id @default(cuid())
+  userId                String
+  chapterId             String
+  reference             String    @unique
+  amountKobo            Int
+  status                String    @default("PENDING") // PENDING or SUCCESSFUL
+  paystackTransactionId String?
+  paidAt                DateTime?
+  createdAt             DateTime  @default(now())
 
-4. Nothing else changes. No new models or relations.
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chapterId])
+  @@index([chapterId, status])
+}
 
 Then run:
 
   npx prisma validate
   npx prisma generate
-  npm run prisma:migrate      (name it: add_paystack_payouts)
-
-The Earning model already exists, so the earlier migrations don't need to be repeated.
+  npm run prisma:migrate      (name it: add_chapter_unlocks)

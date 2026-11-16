@@ -1,59 +1,59 @@
-PAYSTACK PAYOUTS, WEBHOOK, AND WALLET
-=====================================
+CHAPTER GATING, OFFLINE RULES, COVERS, CLEAR ON LOGOUT
+======================================================
 
 1. SCHEMA (manual)
-   Follow prisma/SCHEMA-ADDITIONS.txt. Four additions, then:
+   Follow prisma/SCHEMA-ADDITIONS.txt. Three additions, then:
 
      npx prisma validate
      npx prisma generate
-     npm run prisma:migrate      (name it: add_paystack_payouts)
+     npm run prisma:migrate      (name it: add_chapter_unlocks)
 
-2. ENVIRONMENT VARIABLES
-   Add to .env (and to Vercel for the live site):
-
-     PAYSTACK_SECRET_KEY="sk_test_..."     (test key first; sk_live_... later)
-
-   Get the key from the Paystack dashboard under Settings -> API Keys & Webhooks.
-
-3. UNZIP
+2. UNZIP
    From the project folder:
 
-     unzip -o paystack-changes.zip
+     unzip -o chapter-gating-changes.zip
 
    Files added or replaced:
-     src/lib/paystack.ts                                   (new)
-     src/lib/tipPayments.ts                                (new)
-     src/app/api/tips/route.ts                             (replaced)
-     src/app/api/tips/callback/route.ts                    (replaced)
-     src/app/api/tips/webhook/route.ts                     (new)
-     src/app/api/admin/payment-eligibility-requests/[id]/route.ts  (replaced)
-     src/app/payment-eligibility/page.tsx                  (replaced)
-     src/app/wallet/page.tsx                               (new)
+     src/lib/unlockPayments.ts                                       (new)
+     src/lib/clearLocalData.ts                                       (new)
+     src/lib/offlineStore.ts                                         (replaced)
+     src/app/api/chapters/[id]/unlock/route.ts                       (new)
+     src/app/api/unlocks/callback/route.ts                           (new)
+     src/app/api/tips/webhook/route.ts                               (replaced)
+     src/app/api/books/[id]/offline/route.ts                         (replaced)
+     src/app/books/[id]/chapters/[chapterId]/page.tsx                (replaced)
+     src/components/UnlockChapterButton.tsx                          (new)
+     src/components/DownloadBookButton.tsx                           (replaced)
+     src/components/OfflineLibrary.tsx                               (replaced)
+     src/components/LogoutButton.tsx                                 (replaced)
 
-4. PAYSTACK WEBHOOK (manual, in the Paystack dashboard)
-   Settings -> API Keys & Webhooks -> Webhook URL:
+3. CLEAR OLD DOWNLOADS ON EVERY DEVICE
+   Downloads made before this change may hold chapter text for priced chapters.
+   On each device, open Library and tap "Clear all downloads", then download again.
 
-     https://storyspace-jet.vercel.app/api/tips/webhook
+4. TEST
+   a. Open a priced chapter as a reader who hasn't paid. You should see a
+      preview of about 120 words, the price, and an Unlock button. View the
+      page source: the rest of the text must not be there.
+   b. Log out. Log in as another account, open a book, and download it.
+      Locked chapters show a lock and "Unlock it online to read it".
+   c. Unlock a chapter with a test card. You return to the chapter with the
+      text shown and a "Chapter unlocked" message. The author's wallet shows
+      the earning.
+   d. Log out. The Library should be empty, and the cached pages cleared.
+   e. Covers should show in the Library with no connection.
 
-   For local testing, the webhook can't reach localhost. Use the redirect
-   flow locally, and test the webhook on the live site.
-
-5. TEST (in this order)
-   a. Approve a creator. The admin approval checks the account name against
-      the applicant's name, then creates the subaccount. The terminal shows
-      the result. A name mismatch returns an error with the bank's name.
-   b. Send a N100 tip with a Paystack test card. Note the platform's share
-      and the creator's share in the Paystack dashboard.
-   c. Open /wallet as the creator. The tip should appear as earned.
-   d. Reload the callback page. The earning must not appear twice.
+5. WEBHOOK
+   The existing Paystack webhook URL handles unlocks too. No change in the
+   dashboard is needed.
 
 6. PUSH
    git add .
-   git commit -m "Paystack payouts: 30% platform share, webhook, earnings, wallet"
+   git commit -m "Chapter gating: paid unlocks, offline access rules, saved covers, clear on logout"
    git push
 
-NOTE ON THE SPLIT
------------------
-The transaction_charge field is the platform's flat share of each payment.
-Paystack's documentation is not fully consistent on which side it applies to.
-Confirm the split with the first test tip before going live, as before.
+KNOWN LIMIT
+-----------
+If a reader starts checkout twice for the same chapter, the second attempt
+replaces the first. If they pay through the first checkout page, the admin
+Tips reconcile page can't see it yet. This is rare; tell me if you see it.

@@ -85,6 +85,7 @@ model User {
   messages      Message[]
   conversations ConversationParticipant[]
   earnings      Earning[]
+    chapterUnlocks ChapterUnlock[]
 
   verificationRequest       VerificationRequest?
   paymentEligibilityRequest PaymentEligibilityRequest?
@@ -145,6 +146,7 @@ model Chapter {
   wordCount   Int
   priceKobo   Int      @default(0) // derived from wordCount at publish time (see lib/pricing.ts) — never set directly by the author. 1 NGN = 100 kobo.
   order       Int
+    unlocks ChapterUnlock[]
   publishedAt DateTime @default(now())
 
   book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
@@ -398,4 +400,21 @@ model RecentSearch {
 
   @@unique([userId, query])
   @@index([userId, createdAt])
+}
+model ChapterUnlock {
+  id                    String    @id @default(cuid())
+  userId                String
+  chapterId             String
+  reference             String    @unique
+  amountKobo            Int
+  status                String    @default("PENDING") // PENDING or SUCCESSFUL
+  paystackTransactionId String?
+  paidAt                DateTime?
+  createdAt             DateTime  @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chapterId])
+  @@index([chapterId, status])
 }
