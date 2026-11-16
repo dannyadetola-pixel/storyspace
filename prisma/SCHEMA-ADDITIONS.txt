@@ -1,38 +1,29 @@
-SCHEMA ADDITIONS - CHAPTER UNLOCKS
-==================================
+SCHEMA ADDITIONS - CHAPTER UNLOCK NOTIFICATIONS
+===============================================
 
-Do NOT replace prisma/schema.prisma. Make these three additions.
+Do NOT replace prisma/schema.prisma. In "enum NotificationType { ... }", add
+one value at the end, so the enum reads:
 
-1. Inside "model User { ... }", add this line next to the other relations:
-
-  chapterUnlocks ChapterUnlock[]
-
-2. Inside "model Chapter { ... }", add this line next to the other relations:
-
-  unlocks ChapterUnlock[]
-
-3. At the bottom of the file, add this model:
-
-model ChapterUnlock {
-  id                    String    @id @default(cuid())
-  userId                String
-  chapterId             String
-  reference             String    @unique
-  amountKobo            Int
-  status                String    @default("PENDING") // PENDING or SUCCESSFUL
-  paystackTransactionId String?
-  paidAt                DateTime?
-  createdAt             DateTime  @default(now())
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, chapterId])
-  @@index([chapterId, status])
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  VERIFIED
+  VERIFICATION_REVOKED
+  PAYMENT_APPROVED
+  PAYMENT_REVOKED
+  MESSAGE
+  CHAPTER_UNLOCKED
 }
 
-Then run:
+No other schema change is needed.
+
+The matching migration is already in this package at:
+  prisma/migrations/20261116100000_notify_chapter_unlocked/migration.sql
+
+Because the shadow database is still broken, apply it with the deploy command:
 
   npx prisma validate
   npx prisma generate
-  npm run prisma:migrate      (name it: add_chapter_unlocks)
+  npx prisma migrate deploy
+  npx prisma migrate status    (should say the database is up to date)

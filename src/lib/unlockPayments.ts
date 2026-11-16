@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { creatorShareKobo } from "@/lib/paystack";
+import { notify } from "@/lib/notify";
 
-// Marks a chapter unlock successful and writes one earnings record for the
-// author. Safe to call twice: the second call changes nothing.
+// Marks a chapter unlock successful, writes one earnings record for the author,
+// and notifies the author. Safe to call twice: the second call changes nothing
+// and sends no second notification.
 //   feesKobo:    Paystack's fee on the payment.
 //   chargedKobo: what the reader actually paid. If it's more than the price,
 //                the reader paid the fee, so the author bears none of it.
@@ -16,9 +18,18 @@ export async function markUnlockSuccessful(
     where: { reference },
     select: {
       id: true,
+      userId: true,
       amountKobo: true,
       status: true,
-      chapter: { select: { book: { select: { userId: true } } } },
+      user: { select: { username: true } },
+      chapter: {
+        select: {
+          id: true,
+          title: true,
+          bookId: true,
+          book: { select: { title: true, userId: true } },
+        },
+      },
     },
   });
   if (!unlock) return null;
@@ -26,7 +37,7 @@ export async function markUnlockSuccessful(
 
   const authorId = unlock.chapter.book.userId;
 
-  await prisma.$transaction(async (tx) => {
+  const credited = await prisma.$transaction(async (tx) => {
     // Only one caller can move the unlock from PENDING to SUCCESSFUL.
     const claimed = await tx.chapterUnlock.updateMany({
       where: { id: unlock.id, status: "PENDING" },
@@ -36,7 +47,7 @@ export async function markUnlockSuccessful(
         paystackTransactionId: paystackTransactionId ?? null,
       },
     });
-    if (claimed.count === 0) return;
+    if (claimed.count === 0) return false;
 
     const readerPaidFee =
       chargedKobo !== undefined && chargedKobo > unlock.amountKobo;
@@ -55,7 +66,20 @@ export async function markUnlockSuccessful(
         reference,
       },
     });
+    return true;
   });
+
+  // Only the call that credited the unlock notifies the author, so a repeated
+  // webhook or callback can't send the same notification twice.
+  if (credited) {
+    await notify({
+      userId: authorId,
+      actorId: unlock.userId,
+      type: "CHAPTER_UNLOCKED",
+      message: `${unlock.user.username} unlocked “${unlock.chapter.title}” in ${unlock.chapter.book.title}`,
+      link: `/books/${unlock.chapter.bookId}/chapters/${unlock.chapter.id}`,
+    });
+  }
 
   return unlock;
 }
