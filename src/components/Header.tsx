@@ -18,9 +18,12 @@ export default async function Header() {
   const navTone = signedIn
     ? "text-app-text/70 dark:text-app-text-dark/70"
     : "text-white/70";
+
+  // The bar stays at the top while the page scrolls, and sits below the notch.
   const headerClass = signedIn
-    ? "relative border-b border-black/5 dark:border-white/10"
-    : "relative border-b border-white/10 bg-[#000000] text-white";
+    ? "sticky top-0 z-30 bg-app-bg/95 pt-[env(safe-area-inset-top)] backdrop-blur border-b border-black/5 dark:border-white/10 dark:bg-app-bg-dark/95"
+    : "sticky top-0 z-30 bg-[#000000] pt-[env(safe-area-inset-top)] border-b border-white/10 text-white";
+
   // The mobile dropdown has its own padding, so the dark version extends the
   // background into it with negative margins.
   const mobileWrap = signedIn
