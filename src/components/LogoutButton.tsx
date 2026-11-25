@@ -1,31 +1,37 @@
 "use client";
 
+import { useState } from "react";
 import { logoutAction } from "@/app/actions";
 import { clearLocalData } from "@/lib/clearLocalData";
 
-// Clears offline data before signing out, but never blocks sign-out for long.
-// If clearing fails or stalls, the reader is still signed out.
-async function withTimeout(task: Promise<unknown>, ms: number) {
-  await Promise.race([
-    task.catch((err) => console.error("Clearing local data failed:", err)),
-    new Promise((resolve) => setTimeout(resolve, ms)),
-  ]);
-}
-
+// Clears offline data, then signs out. The sign-out runs from the click handler,
+// not from a form, so it doesn't depend on the form staying on the page.
 export default function LogoutButton() {
+  const [busy, setBusy] = useState(false);
+
   async function logout() {
-    await withTimeout(clearLocalData(), 2000);
-    await logoutAction();
+    if (busy) return;
+    setBusy(true);
+    try {
+      // Give clearing at most two seconds; never block sign-out on it.
+      await Promise.race([
+        clearLocalData().catch((err) => console.error("Clearing local data failed:", err)),
+        new Promise((resolve) => setTimeout(resolve, 2000)),
+      ]);
+      await logoutAction();
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <form action={logout}>
-      <button
-        type="submit"
-        className="hover:text-app-text dark:hover:text-app-text-dark"
-      >
-        Log out
-      </button>
-    </form>
+    <button
+      type="button"
+      onClick={logout}
+      disabled={busy}
+      className="hover:text-app-text disabled:opacity-60 dark:hover:text-app-text-dark"
+    >
+      {busy ? "Logging out…" : "Log out"}
+    </button>
   );
 }
