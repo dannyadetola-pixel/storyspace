@@ -1,12 +1,9 @@
 // scripts/seed-demo.mjs
-// Fills StorySpace with demo creators, books, chapters, posts, follows, likes,
-// comments, views and editor picks. The content lives in scripts/demo-data.mjs.
+// Fills StorySpace with demo content. Content lives in scripts/demo-data.mjs.
 //
-// Add demo data:    node --env-file=.env scripts/seed-demo.mjs
-// Remove demo data: node --env-file=.env scripts/seed-demo.mjs --clean
-//
-// Running it again first removes the previous demo data, so it never duplicates.
-// Requires Node 20.6 or newer.
+// Seed:  node --env-file=.env scripts/seed-demo.mjs
+// Check: node --env-file=.env scripts/seed-demo.mjs --check
+// Clean: node --env-file=.env scripts/seed-demo.mjs --clean
 
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -23,15 +20,34 @@ import {
 } from "./demo-data.mjs";
 
 const prisma = new PrismaClient();
-const CLEAN = process.argv.includes("--clean");
+const MODE = process.argv.includes("--clean")
+  ? "clean"
+  : process.argv.includes("--check")
+    ? "check"
+    : "seed";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 const now = Date.now();
 const ago = (ms) => new Date(now - ms);
 
-// Removes every demo account, along with their books, chapters, posts, and the
-// likes and comments attached to them.
+const demoBook = { user: { username: { startsWith: PREFIX } } };
+
+async function counts() {
+  return {
+    users: await prisma.user.count({ where: { username: { startsWith: PREFIX } } }),
+    books: await prisma.book.count({ where: demoBook }),
+    chapters: await prisma.chapter.count({ where: { book: demoBook } }),
+    posts: await prisma.post.count({ where: { user: { username: { startsWith: PREFIX } } } }),
+    editorPicks: await prisma.editorPick.count({ where: { book: demoBook } }),
+    bookViews: await prisma.bookView.count({ where: { book: demoBook } }),
+  };
+}
+
+function step(name) {
+  console.log(`→ ${name}`);
+}
+
 async function removeDemo() {
   const users = await prisma.user.findMany({
     where: { username: { startsWith: PREFIX } },
@@ -61,14 +77,27 @@ async function removeDemo() {
 }
 
 async function main() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set. Run with: node --env-file=.env scripts/seed-demo.mjs");
+  }
+
+  if (MODE === "check") {
+    console.log("Demo content in the database:", await counts());
+    return;
+  }
+
+  step("Removing previous demo data");
   const removed = await removeDemo();
-  console.log(`Removed ${removed} demo accounts and their content.`);
-  if (CLEAN) return;
+  console.log(`  removed ${removed} demo accounts`);
+  if (MODE === "clean") {
+    console.log("Clean complete.");
+    return;
+  }
 
   const passwordHash = await bcrypt.hash(PASSWORD, 10);
   const today = new Date(new Date().toISOString().slice(0, 10));
 
-  // Accounts
+  step("Creating accounts");
   const ids = {};
   for (const p of [...creators, ...readers]) {
     const user = await prisma.user.create({
@@ -84,9 +113,7 @@ async function main() {
     ids[p.username] = user.id;
   }
 
-  // Books and chapters. Book 0 is the oldest, so "New books" orders by the list.
-  // Each chapter's date comes from its book's position, so "New chapters" mixes
-  // books instead of showing one book's chapters together.
+  step("Creating books and chapters");
   const bookIds = [];
   const chapterIds = [];
   for (const [i, b] of books.entries()) {
@@ -119,7 +146,7 @@ async function main() {
     chapterIds.push(...book.chapters.map((c) => c.id));
   }
 
-  // Posts, each a different age, so the feed row has an order
+  step("Creating posts");
   const postIds = [];
   for (const [i, p] of postData.entries()) {
     const post = await prisma.post.create({
@@ -134,7 +161,7 @@ async function main() {
     postIds.push(post.id);
   }
 
-  // Follows: every reader follows every creator, and creators follow each other
+  step("Creating follows");
   const followPairs = [
     ...readers.flatMap((r) => creators.map((c) => [r.username, c.username])),
     ...creators.flatMap((a) =>
@@ -142,15 +169,11 @@ async function main() {
     ),
   ];
   await prisma.follow.createMany({
-    data: followPairs.map(([from, to]) => ({
-      followerId: ids[from],
-      followedId: ids[to],
-    })),
+    data: followPairs.map(([from, to]) => ({ followerId: ids[from], followedId: ids[to] })),
     skipDuplicates: true,
   });
 
-  // Reads. Book i is read by 10 - floor(0.6 * i) readers, so "Popular right now"
-  // runs from the most-read book down to the least.
+  step("Recording reads");
   const viewRows = [];
   books.forEach((_, i) => {
     const count = Math.max(1, readers.length - Math.floor(0.6 * i));
@@ -160,7 +183,7 @@ async function main() {
   });
   await prisma.bookView.createMany({ data: viewRows, skipDuplicates: true });
 
-  // Likes: every reader likes every post, and about a third of the chapters
+  step("Adding likes");
   const likeRows = [];
   readers.forEach((r, k) => {
     postIds.forEach((targetId) =>
@@ -174,7 +197,7 @@ async function main() {
   });
   await prisma.reaction.createMany({ data: likeRows, skipDuplicates: true });
 
-  // Comments on the first three posts
+  step("Adding comments");
   await prisma.comment.createMany({
     data: [
       { userId: ids.demo_reader1, targetType: "POST", targetId: postIds[0], body: "The light in this one is beautiful." },
@@ -183,23 +206,31 @@ async function main() {
     ],
   });
 
-  // Editor picks: the first four books
+  step("Adding editor picks");
   await prisma.editorPick.createMany({
     data: bookIds.slice(0, 4).map((bookId, i) => ({ bookId, position: i + 1 })),
     skipDuplicates: true,
   });
 
-  const totalChapters = chapterIds.length;
-  console.log(
-    `Created ${creators.length} creators, ${readers.length} readers, ${bookIds.length} books, ${totalChapters} chapters and ${postIds.length} posts.`
-  );
-  console.log(`Demo login (any demo account): demo_reader1@${DOMAIN} / ${PASSWORD}`);
-  console.log("Remove later with: node --env-file=.env scripts/seed-demo.mjs --clean");
+  step("Checking the result");
+  const result = await counts();
+  console.log("  in database:", result);
+  const expected = { users: 15, books: 14, chapters: 64, posts: 8, editorPicks: 4 };
+  let ok = true;
+  for (const [key, want] of Object.entries(expected)) {
+    if (result[key] !== want) {
+      ok = false;
+      console.warn(`  WARNING: expected ${want} ${key}, found ${result[key]}`);
+    }
+  }
+  if (ok) console.log("Seeding complete. Every count matches.");
+  console.log(`Login: demo_reader1@${DOMAIN} / ${PASSWORD}`);
 }
 
 main()
   .catch((err) => {
-    console.error("Seeding failed:", err);
+    console.error("\nSeeding stopped with an error:");
+    console.error(err);
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());
