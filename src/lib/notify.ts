@@ -9,7 +9,8 @@ export type NotificationKind =
   | "PAYMENT_APPROVED"
   | "PAYMENT_REVOKED"
   | "MESSAGE"
-  | "CHAPTER_UNLOCKED";
+  | "CHAPTER_UNLOCKED"
+  | "CONTENT_REMOVED";
 
 // Creates a notification for one user. A failure is logged but never
 // breaks the action that triggered it, and nobody is notified about

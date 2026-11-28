@@ -353,6 +353,7 @@ enum NotificationType {
   PAYMENT_REVOKED
   MESSAGE
   CHAPTER_UNLOCKED
+  CONTENT_REMOVED
 }
 
 model Notification {

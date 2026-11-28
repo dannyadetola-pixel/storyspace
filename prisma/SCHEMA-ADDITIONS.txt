@@ -1,27 +1,17 @@
-SCHEMA ADDITIONS - CHAPTER UNLOCK NOTIFICATIONS
-===============================================
+SCHEMA ADDITIONS - CONTENT REMOVAL NOTIFICATIONS
+================================================
 
-Do NOT replace prisma/schema.prisma. In "enum NotificationType { ... }", add
-one value at the end, so the enum reads:
+Do NOT replace prisma/schema.prisma. In "enum NotificationType { ... }", add one
+value at the end, so the enum ends with:
 
-enum NotificationType {
-  LIKE
-  COMMENT
-  FOLLOW
-  VERIFIED
-  VERIFICATION_REVOKED
-  PAYMENT_APPROVED
-  PAYMENT_REVOKED
-  MESSAGE
   CHAPTER_UNLOCKED
+  CONTENT_REMOVED
 }
 
-No other schema change is needed.
+The matching migration is in this package:
+  prisma/migrations/20261117100000_notify_content_removed/migration.sql
 
-The matching migration is already in this package at:
-  prisma/migrations/20261116100000_notify_chapter_unlocked/migration.sql
-
-Because the shadow database is still broken, apply it with the deploy command:
+Apply it with deploy, because the shadow database is still broken:
 
   npx prisma validate
   npx prisma generate
